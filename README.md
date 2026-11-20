@@ -1,10 +1,14 @@
 # Ruvox
 
-Ruvox is a local-first desktop app in development for Brazilian Portuguese
-speakers learning Russian. Lessons start with the Cyrillic alphabet and use
-spaced repetition to practice letter sounds and word meanings offline. Planned
-AI features include feedback on typed answers and exercises based on vocabulary
-from songs the learner supplies.
+Ruvox is a local-first desktop app for Brazilian Portuguese speakers learning
+Russian. Lessons start with the Cyrillic alphabet and use spaced repetition.
+Seven game modes work offline with no API key. With a key, AI agents plan
+sessions, write questions, correct typed answers and extract vocabulary from
+song lyrics you paste in. Lyrics never leave your computer. The phone can use
+the app over the home Wi-Fi.
+
+Using it: [user guide](docs/user-guide.md) (pt-BR), [phone access](docs/phone.md),
+[LLM costs and models](docs/llm.md).
 
 ## Stack
 
@@ -15,8 +19,7 @@ See the [architecture decisions and roadmap](docs/PLAN.md).
 
 ## Development setup
 
-P0-1 adds the repository documentation. The following commands apply once the
-desktop scaffold lands in P0-4. Start in the repository root on Linux x86_64
+Start in the repository root on Linux x86_64
 with uv, Node.js 24, pnpm 11, stable Rust, Make and the
 [Tauri Linux build dependencies](https://v2.tauri.app/start/prerequisites/#linux).
 
@@ -33,7 +36,13 @@ require no API key. The optional environment settings are listed in
 
 ## Checks
 
-From P0-6 onward, run `make check` in the repository root to check all three
-components. Individual checks become available with the backend in P0-2, the
-frontend in P0-3 and the Tauri shell in P0-4. Each command and its working
-directory are listed in the [quality gates](AGENTS.md#quality-gates).
+Run `make check` in the repository root to check the backend, frontend and Tauri
+shell. Each command and its working directory are listed in the
+[quality gates](AGENTS.md#quality-gates).
+
+## Installers
+
+`make release` builds the `.deb` and AppImage under
+`src-tauri/target/release/bundle/` (it builds the frontend and the packaged Python
+sidecar first). Pushing a tag such as `v0.1.0` runs the same build in GitHub Actions
+and attaches the installers to a release.

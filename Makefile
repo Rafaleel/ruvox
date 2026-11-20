@@ -12,7 +12,7 @@ dev:
 dev-backend:
 	cd backend && uv run python -m app.sidecar --port 8000 --no-stdin-watch
 
-.PHONY: check check-backend check-frontend check-tauri build-sidecar
+.PHONY: check check-backend check-frontend check-tauri build-sidecar release
 
 check: check-backend check-frontend check-tauri
 
@@ -27,3 +27,9 @@ check-tauri: prepare-dev-sidecar
 
 build-sidecar: build-frontend
 	scripts/build-sidecar.sh
+
+# Installable build: .deb and AppImage under src-tauri/target/release/bundle/.
+# `pnpm tauri build` runs `make build-sidecar` first (frontend + PyInstaller).
+release:
+	pnpm install --frozen-lockfile --dir frontend
+	pnpm tauri build
