@@ -26,7 +26,8 @@ import { ErrorMessage } from "./components/ErrorMessage";
 const inputClass =
   "mt-1 min-h-11 w-full rounded-lg border border-line bg-paper px-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50";
 
-const wordsLabel = (n: number) => `${n} ${n === 1 ? "palavra" : "palavras"}`;
+const plural = (n: number, one: string, many: string) =>
+  `${n} ${n === 1 ? one : many}`;
 
 function NewSongForm({ onDone }: { onDone: () => void }) {
   const queryClient = useQueryClient();
@@ -142,7 +143,7 @@ function SongRow({
       {song.artist && <p className="text-muted">{song.artist}</p>}
       <p className="mt-1 text-sm text-muted">
         {song.items > 0
-          ? `${wordsLabel(song.items)} salvas`
+          ? plural(song.items, "palavra salva", "palavras salvas")
           : "Nenhuma palavra salva ainda"}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -240,8 +241,9 @@ function Review({
         </p>
         {(confirm.data.skipped > 0 || confirm.data.rejected > 0) && (
           <p className="mt-1 text-muted">
-            {confirm.data.skipped} já estudadas e {confirm.data.rejected}{" "}
-            recusadas por estarem incompletas.
+            {plural(confirm.data.skipped, "já estudada", "já estudadas")} e{" "}
+            {plural(confirm.data.rejected, "recusada", "recusadas")} por estarem
+            incompletas.
           </p>
         )}
         <div className="mt-6 flex flex-wrap gap-2">
