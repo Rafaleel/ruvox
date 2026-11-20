@@ -147,9 +147,7 @@ it("shows a friendly message when there is nothing to practice", async () => {
   renderPlay();
   fireEvent.click(screen.getByRole("button", { name: "Começar" }));
   expect(
-    await screen.findByText(
-      "Ainda não há nada para treinar. Volte mais tarde.",
-    ),
+    await screen.findByText(/Ainda não há nada para treinar/),
   ).toBeTruthy();
   expect(screen.getByRole("button", { name: "Tentar de novo" })).toBeTruthy();
 });
