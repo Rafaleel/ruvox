@@ -132,9 +132,10 @@ def evaluate(
     if question.input_kind == "pairs":  # the client reports mistakes per item
         try:
             reported = {
-                int(k): max(0, int(v)) for k, v in json.loads(body.answer).items()
+                int(k): min(100, max(0, int(v)))
+                for k, v in json.loads(body.answer).items()
             }
-        except (ValueError, TypeError, AttributeError) as exc:
+        except (ValueError, TypeError, AttributeError, OverflowError) as exc:
             raise HTTPException(422, "Resposta inválida.") from exc
         grades = {i: pairs_grade(mistakes=reported.get(i, 0)) for i in ids}
         return sum(reported.get(i, 0) for i in ids) == 0, grades, question.explanation

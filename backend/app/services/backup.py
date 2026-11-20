@@ -4,9 +4,10 @@ Seed content is not exported: it ships with the app. Review states of seed items
 exported by (kind, text), so a backup still imports after the seed gains new words.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, col, delete, select
 
 from app.models import (
@@ -19,8 +20,26 @@ from app.models import (
     UserProfile,
     now_utc,
 )
+from app.models.schemas import MAX_LYRICS_CHARS
 
 VERSION = 1
+MODES = {"mixed", *"1234567"}
+QUESTION_TYPES = {
+    "letter_to_sound",
+    "sound_to_letter",
+    "word_to_meaning",
+    "typing",
+    "flashcard",
+    "pairs",
+    "cloze",
+}
+INPUT_KINDS = {"choice", "text", "flip", "pairs"}
+LEVELS = {"beginner", "elementary", "intermediate"}
+
+
+def _check(condition: bool) -> None:
+    if not condition:
+        raise ValueError("invalid backup value")
 
 
 class BackupError(ValueError):
@@ -32,7 +51,12 @@ def _iso(value: datetime | None) -> str | None:
 
 
 def _dt(value: str | None) -> datetime | None:
-    return datetime.fromisoformat(value) if value else None
+    if not value:
+        return None
+    parsed = datetime.fromisoformat(value)
+    return (
+        parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+    )  # stored values are UTC
 
 
 def _ref(item: Item) -> dict[str, Any]:
@@ -154,7 +178,7 @@ def import_data(db: Session, user_id: int, data: dict[str, Any]) -> dict[str, in
         raise BackupError("Este arquivo não é um backup do Ruvox compatível.")
     try:
         return _import(db, user_id, data)
-    except (KeyError, TypeError, ValueError) as exc:
+    except (KeyError, TypeError, ValueError, SQLAlchemyError) as exc:
         raise BackupError("O backup está incompleto ou corrompido.") from exc
 
 
@@ -169,6 +193,11 @@ def _import(db: Session, user_id: int, data: dict[str, Any]) -> dict[str, int]:
 
     song_ids: dict[int, int] = {}
     for raw in data["songs"]:
+        _check(
+            isinstance(raw["text"], str)
+            and 0 < len(raw["text"]) <= MAX_LYRICS_CHARS
+            and bool(str(raw["title"]).strip())
+        )
         song = Song(
             user_id=user_id,
             title=raw["title"],
@@ -183,6 +212,9 @@ def _import(db: Session, user_id: int, data: dict[str, Any]) -> dict[str, int]:
 
     item_ids: dict[int, int] = {}
     for raw in data["items"]:
+        _check(
+            raw["kind"] in {"word", "expression"} and 1 <= int(raw["difficulty"]) <= 3
+        )
         item = Item(
             user_id=user_id,
             kind=raw["kind"],
@@ -209,13 +241,16 @@ def _import(db: Session, user_id: int, data: dict[str, Any]) -> dict[str, int]:
         item_id = resolve(raw["item"])
         if item_id is None:
             continue  # a seed item this version no longer has
+        _check(int(raw["repetitions"]) >= 0 and int(raw["interval_days"]) >= 0)
+        _check(1.0 <= float(raw["ease"]) <= 10.0)
+        _check(raw["last_grade"] is None or 0 <= int(raw["last_grade"]) <= 5)
         db.add(
             ReviewState(
                 user_id=user_id,
                 item_id=item_id,
-                repetitions=raw["repetitions"],
-                interval_days=raw["interval_days"],
-                ease=raw["ease"],
+                repetitions=int(raw["repetitions"]),
+                interval_days=int(raw["interval_days"]),
+                ease=float(raw["ease"]),
                 next_review=_dt(raw["next_review"]) or now_utc(),
                 last_grade=raw["last_grade"],
             )
@@ -224,12 +259,13 @@ def _import(db: Session, user_id: int, data: dict[str, Any]) -> dict[str, int]:
 
     session_ids: dict[int, int] = {}
     for raw in data["sessions"]:
+        _check(str(raw["mode"]) in MODES and int(raw["score"]) >= 0)
         study = StudySession(
             user_id=user_id,
             mode=raw["mode"],
             started_at=_dt(raw["started_at"]) or now_utc(),
             ended_at=_dt(raw["ended_at"]),
-            score=raw["score"],
+            score=int(raw["score"]),
         )
         db.add(study)
         db.flush()
@@ -238,6 +274,12 @@ def _import(db: Session, user_id: int, data: dict[str, Any]) -> dict[str, int]:
 
     question_ids: dict[int, int] = {}
     for raw in data["questions"]:
+        _check(
+            raw["type"] in QUESTION_TYPES
+            and raw["input_kind"] in INPUT_KINDS
+            and isinstance(raw["options"], list)
+            and all(isinstance(option, str) for option in raw["options"])
+        )
         question = Question(
             user_id=user_id,
             session_id=session_ids[raw["session_ref"]],
@@ -255,6 +297,8 @@ def _import(db: Session, user_id: int, data: dict[str, Any]) -> dict[str, int]:
         question_ids[raw["ref"]] = question.id
 
     for raw in data["attempts"]:
+        _check(0 <= int(raw["grade"]) <= 5 and int(raw["time_ms"]) >= 0)
+        _check(isinstance(raw["correct"], bool))
         db.add(
             Attempt(
                 user_id=user_id,
@@ -267,7 +311,19 @@ def _import(db: Session, user_id: int, data: dict[str, Any]) -> dict[str, int]:
             )
         )
     if data.get("profile"):
-        db.add(UserProfile(user_id=user_id, **data["profile"]))
+        raw = data["profile"]
+        _check(raw["level"] in LEVELS and isinstance(raw["weak_points"], list))
+        _check(all(isinstance(i, int) for i in raw["weak_points"]))
+        _check(isinstance(raw["preferences"], dict))
+        db.add(
+            UserProfile(
+                user_id=user_id,
+                level=raw["level"],
+                weak_points=raw["weak_points"],
+                preferences={str(k): str(v) for k, v in raw["preferences"].items()},
+            )
+        )
+    db.flush()  # constraint violations surface here, inside the 422 handler
     return {
         "songs": len(song_ids),
         "items": len(item_ids),

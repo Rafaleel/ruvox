@@ -3,7 +3,7 @@
 Ruvox runs on your computer. Your phone can open it over the home Wi-Fi while the
 desktop app is running. Nothing is hosted anywhere else.
 
-1. On the computer, open **Configurações** and turn on **Acesso pelo celular**.
+1. On the computer, open **Configurações** and turn on **Permitir acesso pelo celular**.
    The app restarts by itself and shows an address like `http://192.168.0.12:8787/`
    and a 6-digit code.
 2. On the phone (same Wi-Fi), open that address in the browser and type the code.

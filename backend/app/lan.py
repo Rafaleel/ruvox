@@ -70,7 +70,10 @@ class PairingState:
         ).hexdigest()
 
     def valid(self, cookie: str | None) -> bool:
-        return bool(cookie) and hmac.compare_digest(cookie or "", self.token())
+        # compare_digest raises on non-ASCII str: compare bytes
+        return bool(cookie) and hmac.compare_digest(
+            (cookie or "").encode(), self.token().encode()
+        )
 
     def rotate(self, secret: str) -> None:
         self.secret = secret
@@ -87,7 +90,7 @@ class PairingState:
         now = time.monotonic() if now is None else now
         if self.blocked(who, now):
             return False
-        if hmac.compare_digest(code.strip(), self.code):
+        if hmac.compare_digest(code.strip().encode(), self.code.encode()):
             self._failures.pop(who, None)
             self.code = new_code()  # one code pairs one device
             return True

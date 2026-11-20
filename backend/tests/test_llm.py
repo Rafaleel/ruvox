@@ -98,7 +98,7 @@ def test_wrong_structure_is_rejected(
     StubAgent.result = SimpleNamespace(content="plain text", metrics=None)
     monkeypatch.setattr(llm, "Agent", StubAgent)
     monkeypatch.setattr(llm, "Claude", lambda **_: object())
-    with pytest.raises(LLMUnavailable, match="expected structure"):
+    with pytest.raises(LLMUnavailable, match="plain text"):
         AgnoLLM(db.get_bind(), settings).run("ping", "ping", "hello", Ping)  # type: ignore[arg-type]
 
 
@@ -180,3 +180,38 @@ def test_long_model_output_is_trimmed_by_the_validators() -> None:
         ).grade
         == 9
     )
+
+
+def test_a_rejected_key_gets_a_clear_portuguese_message(
+    db: Session, settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    StubAgent.error = None
+    # Agno hands an API failure back as text in `content` instead of raising.
+    StubAgent.result = SimpleNamespace(
+        content="Error code: 401 - {'error': {'message': 'invalid x-api-key'}}",
+        metrics=None,
+    )
+    monkeypatch.setattr(llm, "Agent", StubAgent)
+    monkeypatch.setattr(llm, "Claude", lambda **_: object())
+    with pytest.raises(LLMUnavailable) as caught:
+        AgnoLLM(db.get_bind(), settings).run("ping", "ping", "hello", Ping)  # type: ignore[arg-type]
+    assert "chave da API foi recusada" in caught.value.user_message
+    assert "401" in str(caught.value)  # the raw detail is kept for the log
+
+
+@pytest.mark.parametrize(
+    ("detail", "expected"),
+    [
+        ("Error code: 403 - permission_error", "permissão"),
+        ("Error code: 404 - not_found_error: model", "modelo não está disponível"),
+        ("Error code: 429 - rate_limit_error", "sobrecarregada"),
+        ("Connection error.", "Sem conexão"),
+        ("Request timed out.", "Sem conexão"),
+        ("Error code: 400 - invalid_request_error", "recusou o pedido"),
+        ("something odd", "Não foi possível falar com o modelo"),
+    ],
+)
+def test_friendly_error_messages(detail: str, expected: str) -> None:
+    from app.agents.llm import friendly_error
+
+    assert expected in friendly_error(detail)

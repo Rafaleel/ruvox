@@ -47,7 +47,5 @@ def test_llm(llm: Llm) -> LLMTestOut:
     try:
         llm.run("ping", "ping", "ping", Ping)
     except LLMUnavailable as exc:
-        return LLMTestOut(
-            ok=False, message=f"Não foi possível falar com o modelo: {exc}"
-        )
+        return LLMTestOut(ok=False, message=exc.user_message)
     return LLMTestOut(ok=True, message="Conexão com o modelo funcionando.")

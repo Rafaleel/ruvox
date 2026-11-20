@@ -44,7 +44,7 @@ A chave fica num arquivo só seu, nunca é exibida de volta e nunca entra em bac
 
 ## Músicas
 
-1. Em **Músicas**, cole o título e a letra (até 20.000 caracteres). A letra fica só no seu
+1. Em **Músicas**, toque em **Adicionar música**, cole o título e a letra (até 20.000 caracteres). A letra fica só no seu
    computador.
 2. Toque em **Analisar** (precisa de chave). A IA lista palavras, expressões e pontos de
    gramática. Desmarque o que não quiser e toque em **Salvar selecionadas**.
@@ -60,7 +60,7 @@ de 5 respostas ou mais.
 
 ## Usar no celular
 
-Veja `docs/phone.md`: ative **Acesso pelo celular**, abra o endereço mostrado no navegador
+Veja `docs/phone.md`: ative **Permitir acesso pelo celular**, abra o endereço mostrado no navegador
 do celular e digite o código de 6 dígitos. O computador precisa estar com o app aberto.
 
 ## Backup

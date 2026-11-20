@@ -244,3 +244,12 @@ def test_a_busy_lan_port_falls_back_to_a_free_one(
                 if process.stdin:
                     process.stdin.close()
                 process.wait(timeout=10)
+
+
+def test_non_ascii_codes_and_cookies_are_rejected_not_crashed(
+    lan: tuple[TestClient, TestClient],
+) -> None:
+    _, phone = lan
+    assert phone.post("/api/lan/pair", json={"code": "١٢٣٤٥٦"}).status_code == 403
+    state = PairingState("ab" * 32)
+    assert state.valid("éé") is False  # a raw non-ASCII cookie must not raise
