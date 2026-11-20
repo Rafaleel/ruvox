@@ -34,6 +34,7 @@ def main() -> None:
         host=args.host,
         port=args.port,
         proxy_headers=False,
+        access_log=False,
         timeout_graceful_shutdown=5,
     )
     server = SidecarServer(config)
