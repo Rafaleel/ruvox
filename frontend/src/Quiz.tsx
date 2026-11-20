@@ -10,6 +10,8 @@ import { Button } from "./components/Button";
 import { Card } from "./components/Card";
 import { CyrillicKeyboard } from "./components/CyrillicKeyboard";
 import { ErrorMessage } from "./components/ErrorMessage";
+import { Flashcard } from "./components/Flashcard";
+import { PairsGame } from "./components/PairsGame";
 import { ProgressBar } from "./components/ProgressBar";
 import { SourceBadge } from "./components/SourceBadge";
 import { Result } from "./Result";
@@ -75,8 +77,8 @@ export function Quiz({
       if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || !finish.isIdle)
         return;
       if (!feedback) {
-        // Digits typed into a text answer are not option shortcuts.
-        if (question.input_kind === "text") return;
+        // Digits only pick options; flip, pairs and text answers use their own inputs.
+        if (question.input_kind !== "choice") return;
         const option = /^[1-9]$/.test(e.key)
           ? question.options[Number(e.key) - 1]
           : undefined;
@@ -125,9 +127,22 @@ export function Quiz({
           label="Progresso da sessão"
         />
       </div>
-      <Card className="mt-6">
-        <h1 className="text-2xl font-bold">{question.prompt}</h1>
-      </Card>
+      {question.input_kind === "flip" ? (
+        <Flashcard
+          key={index}
+          question={question}
+          disabled={answer.isPending}
+          done={!!result}
+          onAnswer={choose}
+        />
+      ) : (
+        <Card className="mt-6">
+          <h1 className="text-2xl font-bold">{question.prompt}</h1>
+        </Card>
+      )}
+      {question.input_kind === "pairs" && (
+        <PairsGame key={index} pairs={question.pairs ?? []} onSubmit={choose} />
+      )}
       {question.input_kind === "text" && (
         <form
           key={index}
@@ -209,9 +224,13 @@ export function Quiz({
             >
               {result.correct ? "Correto!" : "Errou."}
             </p>
-            <p>
-              Resposta certa: <strong>{result.correct_answer}</strong>
-            </p>
+            {/* Self-graded and pairs questions have no single correct answer. */}
+            {(question.input_kind === "choice" ||
+              question.input_kind === "text") && (
+              <p>
+                Resposta certa: <strong>{result.correct_answer}</strong>
+              </p>
+            )}
             <p className="mt-1 text-muted">{result.explanation}</p>
           </>
         )}
