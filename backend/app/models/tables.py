@@ -46,7 +46,7 @@ class Item(SQLModel, table=True):
     song_id: int | None = Field(default=None, foreign_key="song.id")
 
 
-class Session(SQLModel, table=True):
+class StudySession(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
     started_at: datetime = Field(default_factory=_now)
@@ -56,7 +56,7 @@ class Session(SQLModel, table=True):
 
 class Question(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    session_id: int | None = Field(default=None, foreign_key="session.id", index=True)
+    session_id: int | None = Field(default=None, foreign_key="studysession.id", index=True)
     type: str
     prompt: str
     options: list[str] = Field(default_factory=list, sa_column=Column(JSON))

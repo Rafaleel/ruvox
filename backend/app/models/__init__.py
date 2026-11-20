@@ -5,8 +5,8 @@ from app.models.tables import (
     ItemSource,
     Question,
     ReviewState,
-    Session,
     Song,
+    StudySession,
     User,
 )
 
@@ -17,7 +17,7 @@ __all__ = [
     "ItemSource",
     "Question",
     "ReviewState",
-    "Session",
     "Song",
+    "StudySession",
     "User",
 ]
