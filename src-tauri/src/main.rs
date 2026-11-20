@@ -35,7 +35,7 @@ fn ready_port(line: &str) -> Option<u16> {
     digits.parse::<u16>().ok().filter(|port| *port != 0)
 }
 
-fn command() -> std::io::Result<Command> {
+fn command(app: &AppHandle) -> tauri::Result<Command> {
     if cfg!(debug_assertions) {
         let mut cmd = Command::new("uv");
         cmd.current_dir(Path::new(env!("CARGO_MANIFEST_DIR")).join("../backend"))
@@ -43,13 +43,13 @@ fn command() -> std::io::Result<Command> {
         Ok(cmd)
     } else {
         Ok(Command::new(
-            std::env::current_exe()?.with_file_name("ruvox-backend"),
+            app.path().resource_dir()?.join("sidecar/ruvox-backend"),
         ))
     }
 }
 
 fn start_backend(app: &AppHandle) -> Result<mpsc::Receiver<u16>, Box<dyn std::error::Error>> {
-    let mut child = command()?
+    let mut child = command(app)?
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()?;

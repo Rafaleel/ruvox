@@ -5,8 +5,9 @@
   "identifier": "dev.ruvox.desktop",
   "build": {
     "beforeDevCommand": { "script": "make build-frontend prepare-dev-sidecar", "wait": true },
+    "beforeBuildCommand": "make build-frontend && scripts/build-sidecar.sh",
     "frontendDist": "splash"
   },
   "app": { "windows": [] },
-  "bundle": { "active": true, "externalBin": ["binaries/ruvox-backend"] }
+  "bundle": { "active": true, "resources": { "binaries/runtime/ruvox-backend/": "sidecar/" } }
 }

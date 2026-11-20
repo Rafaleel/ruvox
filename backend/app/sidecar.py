@@ -28,7 +28,26 @@ def main() -> None:
         "--host", choices=["127.0.0.1", "localhost"], default="127.0.0.1"
     )
     parser.add_argument("--port", type=int, default=0)
+    parser.add_argument(
+        "--check-agents",
+        action="store_true",
+        help="load packaged agent classes before startup",
+    )
     args = parser.parse_args()
+    if args.check_agents:
+        from agno.agent import Agent
+        from agno.models.anthropic import Claude
+        from agno.team import Team
+        from anthropic import Anthropic
+
+        print(
+            "Loaded:",
+            Agent.__name__,
+            Team.__name__,
+            Claude.__name__,
+            Anthropic.__name__,
+            file=sys.stderr,
+        )
     config = uvicorn.Config(
         create_app(),
         host=args.host,
