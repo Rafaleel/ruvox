@@ -1,4 +1,5 @@
 import json
+from collections.abc import Mapping
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -54,7 +55,7 @@ class AgentContentPlanner:
         return self.fallback.select(user_id, size)
 
     def _payload(
-        self, user_id: int, size: int, candidates: dict[int | None, PlannedItem]
+        self, user_id: int, size: int, candidates: Mapping[int, PlannedItem]
     ) -> str:
         profile = self.db.get(UserProfile, user_id) or UserProfile(user_id=user_id)
         rows = []
@@ -86,7 +87,7 @@ class AgentContentPlanner:
 
     @staticmethod
     def _validate(
-        plan: SessionPlan, candidates: dict[int | None, PlannedItem], size: int
+        plan: SessionPlan, candidates: Mapping[int, PlannedItem], size: int
     ) -> list[PlannedItem] | None:
         ids = [entry.item_id for entry in plan.entries]
         if not 1 <= len(ids) <= size or len(set(ids)) != len(ids):
