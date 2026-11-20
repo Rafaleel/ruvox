@@ -370,6 +370,15 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** Pair */
+        Pair: {
+            /** Item Id */
+            item_id: number;
+            /** Left */
+            left: string;
+            /** Right */
+            right: string;
+        };
         /** ProgressOut */
         ProgressOut: {
             /** Due Count */
@@ -392,18 +401,22 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "letter_to_sound" | "sound_to_letter" | "word_to_meaning" | "typing";
+            type: "letter_to_sound" | "sound_to_letter" | "word_to_meaning" | "typing" | "flashcard" | "pairs" | "cloze";
             /** Prompt */
             prompt: string;
             /**
              * Input Kind
              * @enum {string}
              */
-            input_kind: "choice" | "text";
+            input_kind: "choice" | "text" | "flip" | "pairs";
             /** Options */
             options: string[];
             /** Item Ids */
             item_ids: number[];
+            /** Reveal */
+            reveal?: string | null;
+            /** Pairs */
+            pairs?: components["schemas"]["Pair"][] | null;
         };
         /** SessionCreate */
         SessionCreate: {
@@ -412,7 +425,7 @@ export interface components {
              * @default mixed
              * @enum {unknown}
              */
-            mode: "mixed" | 1 | 2 | 3 | 4;
+            mode: "mixed" | 1 | 2 | 3 | 4 | 5 | 6 | 7;
             /** Song Id */
             song_id?: number | null;
             /**

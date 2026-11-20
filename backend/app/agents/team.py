@@ -17,7 +17,7 @@ from sqlmodel import Session
 from app.agents.generator import AgentQuestionGenerator
 from app.agents.llm import StructuredLLM
 from app.agents.planner import AgentContentPlanner
-from app.services.questions import QuestionDraft, SeedQuestionGenerator
+from app.services.questions import PAIRS_PER_ROUND, QuestionDraft, SeedQuestionGenerator
 from app.services.selection import SeedContentPlanner
 
 # One call times out at 20 s. If planning already used this much of the 25 s budget,
@@ -44,13 +44,21 @@ class SessionTeam:
         self.clock = clock
         self.rng = rng or random.Random()
 
+    @staticmethod
+    def _rounds(size: int) -> int:
+        return min(3, max(1, size // 5))  # pairs: one round per five questions asked
+
     def prepare(
         self, user_id: int, size: int, mode: int | None, song_id: int | None = None
     ) -> PreparedSession:
-        seed_planner = SeedContentPlanner(self.db, song_id=song_id)
+        seed_planner = SeedContentPlanner(
+            self.db, song_id=song_id, require_excerpt=mode == 7
+        )
         seed_generator = SeedQuestionGenerator(self.db, self.rng)
-        if self.llm is None:
-            plan = seed_planner.select(user_id, size)
+        # Flashcards, pairs and cloze never use the model: no key, no cost, no waiting.
+        if self.llm is None or (mode is not None and mode >= 5):
+            plan_size = self._rounds(size) * PAIRS_PER_ROUND if mode == 6 else size
+            plan = seed_planner.select(user_id, plan_size)
             return PreparedSession(seed_generator.generate(plan, size, mode), "offline")
 
         started = self.clock()

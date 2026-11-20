@@ -1,4 +1,5 @@
 import random
+import re
 from collections.abc import Sequence
 from typing import Literal, Protocol
 
@@ -9,15 +10,26 @@ from app.models import Item
 from app.services.selection import PlannedItem
 
 OPTION_COUNT = 4
+PAIRS_PER_ROUND = 6
+MIN_PAIRS = 3
 
 QuestionType = Literal[
-    "letter_to_sound", "sound_to_letter", "word_to_meaning", "typing"
+    "letter_to_sound",
+    "sound_to_letter",
+    "word_to_meaning",
+    "typing",
+    "flashcard",
+    "pairs",
+    "cloze",
 ]
 TYPE_BY_MODE: dict[int, QuestionType] = {
     1: "letter_to_sound",
     2: "sound_to_letter",
     3: "word_to_meaning",
     4: "typing",
+    5: "flashcard",
+    6: "pairs",
+    7: "cloze",
 }
 
 
@@ -30,7 +42,7 @@ class QuestionDraft(BaseModel):
     answer: str
     explanation: str
     item_ids: list[int]
-    input_kind: Literal["choice", "text"] = "choice"
+    input_kind: Literal["choice", "text", "flip", "pairs"] = "choice"
 
 
 class QuestionGenerator(Protocol):
@@ -51,6 +63,12 @@ class SeedQuestionGenerator:
     def generate(
         self, plan: Sequence[PlannedItem], size: int, mode: int | None = None
     ) -> list[QuestionDraft]:
+        if mode == 5:
+            return [self._flashcard(entry.item) for entry in plan[:size]]
+        if mode == 6:
+            return self._pairs(plan)
+        if mode == 7:
+            return self._cloze(plan, size)
         modes_for = {"letter": (1, 2), "word": (3,), "expression": (3,)}
         questions: list[QuestionDraft] = []
         seen: set[str] = set()
@@ -103,6 +121,81 @@ class SeedQuestionGenerator:
             explanation=explanation,
             item_ids=[item.id],
         )
+
+    def _flashcard(self, item: Item) -> QuestionDraft:
+        assert item.id is not None
+        # Self-graded: the "answer" is shown on flip, so it travels as the explanation.
+        reveal = (
+            item.pronunciation
+            if item.kind == "letter"
+            else f"{item.pronunciation} — {item.meaning}"
+        )
+        return QuestionDraft(
+            type="flashcard",
+            prompt=item.text,
+            options=[],
+            answer="knew",
+            explanation=reveal,
+            item_ids=[item.id],
+            input_kind="flip",
+        )
+
+    def _pairs(self, plan: Sequence[PlannedItem]) -> list[QuestionDraft]:
+        ids = [entry.item.id for entry in plan if entry.item.id is not None]
+        rounds = [
+            ids[i : i + PAIRS_PER_ROUND] for i in range(0, len(ids), PAIRS_PER_ROUND)
+        ]
+        return [
+            QuestionDraft(
+                type="pairs",
+                prompt="Una cada palavra ao seu significado antes que o tempo acabe.",
+                options=[],
+                answer="",
+                explanation="Rodada de pares concluída.",
+                item_ids=chunk,
+                input_kind="pairs",
+            )
+            for chunk in rounds
+            if len(chunk) >= MIN_PAIRS
+        ]
+
+    def _cloze(self, plan: Sequence[PlannedItem], size: int) -> list[QuestionDraft]:
+        drafts: list[QuestionDraft] = []
+        for entry in plan:
+            item = entry.item
+            if item.id is None or not item.excerpt or item.kind == "letter":
+                continue
+            blanked = re.sub(
+                re.escape(item.text), "____", item.excerpt, count=1, flags=re.IGNORECASE
+            )
+            if blanked == item.excerpt:
+                continue
+            others = [
+                o.text for o in self.pool if o.kind == item.kind and o.id != item.id
+            ]
+            self.rng.shuffle(others)
+            options = [item.text]
+            for text in others:
+                if text.casefold() not in {o.casefold() for o in options}:
+                    options.append(text)
+                if len(options) == OPTION_COUNT:
+                    break
+            if len(options) < OPTION_COUNT:
+                continue
+            self.rng.shuffle(options)
+            drafts.append(
+                QuestionDraft(
+                    type="cloze",
+                    prompt=f"Complete o trecho: «{blanked}» (significado: {item.meaning})",
+                    options=options,
+                    answer=item.text,
+                    explanation=f"«{item.excerpt}»: {item.text} significa «{item.meaning}».",
+                    item_ids=[item.id],
+                )
+            )
+            if len(drafts) >= size:
+                break
+        return drafts
 
     def _typing(self, item: Item) -> QuestionDraft:
         assert item.id is not None

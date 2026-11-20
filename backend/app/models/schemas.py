@@ -6,19 +6,27 @@ from pydantic import BaseModel, Field
 from app.services.questions import QuestionType
 
 
+class Pair(BaseModel):
+    item_id: int
+    left: str
+    right: str
+
+
 class QuestionOut(BaseModel):
     """What the client sees: never the answer or the explanation."""
 
     id: int
     type: QuestionType
     prompt: str
-    input_kind: Literal["choice", "text"]
+    input_kind: Literal["choice", "text", "flip", "pairs"]
     options: list[str]
     item_ids: list[int]
+    reveal: str | None = None  # flashcards: shown when the card is flipped
+    pairs: list[Pair] | None = None  # pairs rounds: sides to match
 
 
 class SessionCreate(BaseModel):
-    mode: Literal["mixed", 1, 2, 3, 4] = "mixed"
+    mode: Literal["mixed", 1, 2, 3, 4, 5, 6, 7] = "mixed"
     song_id: int | None = None  # practice only the vocabulary of this song
     size: int = Field(default=10, ge=5, le=20)
 
