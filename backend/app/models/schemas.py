@@ -92,3 +92,27 @@ class SettingsIn(BaseModel):
 class LLMTestOut(BaseModel):
     ok: bool
     message: str
+
+
+MAX_LYRICS_CHARS = 20_000
+
+
+class SongIn(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    artist: str = Field(default="", max_length=200)
+    # Longer than MAX_LYRICS_CHARS is rejected with 413 by the endpoint; this cap only
+    # keeps absurd payloads out of memory.
+    text: str = Field(min_length=1, max_length=200_000)
+
+
+class SongOut(BaseModel):
+    id: int
+    title: str
+    artist: str
+    created_at: datetime
+    characters: int
+    items: int
+
+
+class SongDetail(SongOut):
+    text: str
