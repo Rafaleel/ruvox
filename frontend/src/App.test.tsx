@@ -1,8 +1,7 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
+import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { App } from "./App";
+import { mockFetch, progress, renderWithProviders } from "./test-utils";
 
 afterEach(() => {
   cleanup();
@@ -10,17 +9,12 @@ afterEach(() => {
 });
 
 it("renders the nav links and switches routes", async () => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockResolvedValue(Response.json({ status: "ok" })),
-  );
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <MemoryRouter>
-        <App />
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
+  mockFetch({
+    "/api/health": { status: "ok" },
+    "/api/progress": progress,
+    "/api/items?kind=letter": [],
+  });
+  renderWithProviders(<App />);
   const nav = screen.getByRole("navigation", { name: "Navegação principal" });
   const names = Array.from(nav.querySelectorAll("a")).map((a) => [
     a.textContent,
