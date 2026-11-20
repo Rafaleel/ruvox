@@ -53,17 +53,18 @@ function useReloadWhenBack(active: boolean) {
 
 export function PhoneAccess() {
   const queryClient = useQueryClient();
+  const [restarting, setRestarting] = useState(false);
   const lan = useQuery({
     queryKey: ["lan"],
     queryFn: ({ signal }) => getLan(signal),
     retry: false,
     // The code changes when a phone pairs.
-    refetchInterval: (query) => (query.state.data?.running ? 5000 : false),
+    refetchInterval: (query) =>
+      query.state.data?.running && !restarting ? 5000 : false,
   });
   const [warning, setWarning] = useState(false);
   const [confirmUnpair, setConfirmUnpair] = useState(false);
   const [notice, setNotice] = useState("");
-  const [restarting, setRestarting] = useState(false);
   const timedOut = useReloadWhenBack(restarting);
 
   const toggle = useMutation({
@@ -95,7 +96,8 @@ export function PhoneAccess() {
 
   // Opened from a phone: only the desktop manages phone access.
   if (lan.error instanceof ApiError && lan.error.status === 403) return null;
-  if (lan.isError)
+  // Keep the card (and its restart message) if a refetch fails mid-restart.
+  if (lan.isError && !lan.data)
     return (
       <Card className="mt-4">
         <h2 className="text-xl font-bold">Acesso pelo celular</h2>
@@ -182,11 +184,9 @@ export function PhoneAccess() {
           <div>
             <p className="font-semibold">Código de pareamento</p>
             {code && (
-              <p
-                aria-label={`Código ${code.split("").join(" ")}`}
-                className="text-5xl font-extrabold tracking-[0.2em]"
-              >
-                {code}
+              <p className="text-5xl font-extrabold tracking-[0.2em]">
+                <span aria-hidden="true">{code}</span>
+                <span className="sr-only">{code.split("").join(" ")}</span>
               </p>
             )}
           </div>
