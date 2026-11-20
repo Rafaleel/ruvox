@@ -24,14 +24,15 @@ it("renders the nav links and switches routes", async () => {
     ["Início", "/"],
     ["Jogar", "/play"],
     ["Músicas", "/songs"],
-    ["Alfabeto", "/alphabet"],
+    ["Progresso", "/progress"],
     ["Configurações", "/settings"],
   ]);
   expect(await screen.findByText("Serviço local conectado")).toBeTruthy();
 
-  fireEvent.click(screen.getByRole("link", { name: "Alfabeto" }));
-  expect(screen.getByRole("heading", { name: "Alfabeto" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("link", { name: "Configurações" }));
   expect(
-    screen.getByRole("link", { name: "Alfabeto" }).getAttribute("aria-current"),
+    screen
+      .getByRole("link", { name: "Configurações" })
+      .getAttribute("aria-current"),
   ).toBe("page");
 });

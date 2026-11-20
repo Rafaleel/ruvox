@@ -44,3 +44,16 @@ export const progress = {
   words_unlocked: 12,
   words_total: 40,
 };
+
+export const stats = {
+  mastery: { new: 4, learning: 3, familiar: 2, mastered: 1 },
+  days: Array.from({ length: 30 }, (_, i) => ({
+    date: `2026-03-${String(i + 1).padStart(2, "0")}`,
+    answered: i === 29 ? 10 : 0,
+    correct: i === 29 ? 7 : 0,
+    sessions: i === 29 ? 1 : 0,
+  })),
+  streak: 1,
+  best_streak: 5,
+  today_done: true,
+};
