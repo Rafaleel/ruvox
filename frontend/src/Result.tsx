@@ -1,17 +1,23 @@
-import type { FinishResult } from "./api/client";
+import type { FinishResult, Session } from "./api/client";
 import { Button } from "./components/Button";
 import { Card } from "./components/Card";
+import { SourceBadge } from "./components/SourceBadge";
 
 export function Result({
   result,
+  source,
   onRestart,
 }: {
   result: FinishResult;
+  source: Session["source"];
   onRestart: () => void;
 }) {
   return (
     <>
-      <h1 className="text-3xl font-extrabold">Resultado</h1>
+      <div className="flex items-center gap-3">
+        <h1 className="text-3xl font-extrabold">Resultado</h1>
+        <SourceBadge source={source} />
+      </div>
       <Card className="mt-4 text-center">
         <p className="text-5xl font-extrabold">
           {result.score}/{result.answered}

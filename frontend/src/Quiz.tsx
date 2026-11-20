@@ -11,6 +11,7 @@ import { Card } from "./components/Card";
 import { CyrillicKeyboard } from "./components/CyrillicKeyboard";
 import { ErrorMessage } from "./components/ErrorMessage";
 import { ProgressBar } from "./components/ProgressBar";
+import { SourceBadge } from "./components/SourceBadge";
 import { Result } from "./Result";
 
 type Feedback = { chosen: string; result: AnswerResult };
@@ -94,7 +95,13 @@ export function Quiz({
   });
 
   if (finish.isSuccess)
-    return <Result result={finish.data} onRestart={onRestart} />;
+    return (
+      <Result
+        result={finish.data}
+        source={session.source}
+        onRestart={onRestart}
+      />
+    );
   if (finish.isPending) return <p role="status">Calculando o resultado…</p>;
   if (finish.isError)
     return (
@@ -105,8 +112,9 @@ export function Quiz({
   return (
     <>
       <div className="flex items-baseline justify-between text-sm text-muted">
-        <span>
+        <span className="flex items-center gap-2">
           Pergunta {index + 1} de {queue.length}
+          <SourceBadge source={session.source} />
         </span>
         <span>Acertos: {score}</span>
       </div>
