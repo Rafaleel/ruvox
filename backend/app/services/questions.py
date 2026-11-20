@@ -10,11 +10,14 @@ from app.services.selection import PlannedItem
 
 OPTION_COUNT = 4
 
-QuestionType = Literal["letter_to_sound", "sound_to_letter", "word_to_meaning"]
+QuestionType = Literal[
+    "letter_to_sound", "sound_to_letter", "word_to_meaning", "typing"
+]
 TYPE_BY_MODE: dict[int, QuestionType] = {
     1: "letter_to_sound",
     2: "sound_to_letter",
     3: "word_to_meaning",
+    4: "typing",
 }
 
 
@@ -27,7 +30,7 @@ class QuestionDraft(BaseModel):
     answer: str
     explanation: str
     item_ids: list[int]
-    input_kind: Literal["choice"] = "choice"
+    input_kind: Literal["choice", "text"] = "choice"
 
 
 class QuestionGenerator(Protocol):
@@ -56,7 +59,9 @@ class SeedQuestionGenerator:
         for round_ in range(2):  # a second round adds the other letter mode
             for index, entry in enumerate(plan):
                 available = modes_for.get(entry.item.kind, ())
-                if mode is not None:
+                if mode == 4 and available:  # typing is never part of a mixed session
+                    available = (4,)
+                elif mode is not None:
                     available = tuple(m for m in available if m == mode)
                 if not available or len(questions) >= size:
                     continue
@@ -74,6 +79,8 @@ class SeedQuestionGenerator:
 
     def _build(self, item: Item, mode: int) -> QuestionDraft:
         assert item.id is not None
+        if mode == 4:
+            return self._typing(item)
         if mode == 1:
             prompt = f"Como se lê «{item.text}»?"
             answer, field = item.pronunciation, "pronunciation"
@@ -97,6 +104,28 @@ class SeedQuestionGenerator:
             answer=answer,
             explanation=explanation,
             item_ids=[item.id],
+        )
+
+    def _typing(self, item: Item) -> QuestionDraft:
+        assert item.id is not None
+        if item.kind == "letter":
+            prompt = f"Digite em russo a letra que faz «{item.pronunciation}»."
+            explanation = f"{item.text} lê-se {item.pronunciation}."
+        else:
+            prompt = (
+                f"Como se escreve «{item.meaning}» em russo? ({item.pronunciation})"
+            )
+            explanation = (
+                f"{item.meaning} em russo é {item.text} ({item.pronunciation})."
+            )
+        return QuestionDraft(
+            type="typing",
+            prompt=prompt,
+            options=[],
+            answer=item.text,
+            explanation=explanation,
+            item_ids=[item.id],
+            input_kind="text",
         )
 
     def _distractors(self, item: Item, field: str, answer: str) -> list[str]:

@@ -66,3 +66,22 @@ def test_answer_checker() -> None:
     assert not answers_match("елка", "елки", typed=True)
     assert answers_match("tch (como em 'tchau')", "tch (como em 'tchau')")
     assert not answers_match("a", "A")
+
+
+def test_typing_questions_have_no_options_and_ask_for_cyrillic(db: Session) -> None:
+    letter, word = generator(db).generate(plan_of(db, "Ч", "банан"), 5, mode=4)
+    assert (letter.type, letter.input_kind, letter.options) == ("typing", "text", [])
+    assert letter.answer == "Ч" and letter.prompt.startswith("Digite em russo a letra")
+    assert (
+        word.answer == "банан" and "banana" in word.prompt and "ba-NÁN" in word.prompt
+    )
+
+
+def test_typing_is_never_part_of_a_mixed_session(db: Session) -> None:
+    kinds = {q.type for q in generator(db).generate(plan_of(db, "Ч", "А", "банан"), 10)}
+    assert "typing" not in kinds
+
+
+def test_stress_marks_are_ignored() -> None:
+    assert answers_match("банан", "бана́н", typed=True)
+    assert answers_match("й", "Й", typed=True)

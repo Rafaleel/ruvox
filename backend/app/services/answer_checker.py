@@ -2,8 +2,9 @@ import unicodedata
 
 
 def normalize(text: str) -> str:
-    """Forgiving form for typed Cyrillic: NFC, trimmed, case-folded, ё treated as е."""
-    return unicodedata.normalize("NFC", text).strip().casefold().replace("ё", "е")
+    """Forgiving form for typed Cyrillic: NFC, trimmed, case-folded, stress marks dropped, ё treated as е."""
+    plain = text.replace("\u0301", "").replace("\u0300", "")  # stress marks
+    return unicodedata.normalize("NFC", plain).strip().casefold().replace("ё", "е")
 
 
 def answers_match(expected: str, given: str, *, typed: bool = False) -> bool:

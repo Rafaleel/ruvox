@@ -12,13 +12,13 @@ class QuestionOut(BaseModel):
     id: int
     type: QuestionType
     prompt: str
-    input_kind: Literal["choice"]
+    input_kind: Literal["choice", "text"]
     options: list[str]
     item_ids: list[int]
 
 
 class SessionCreate(BaseModel):
-    mode: Literal["mixed", 1, 2, 3] = "mixed"
+    mode: Literal["mixed", 1, 2, 3, 4] = "mixed"
     size: int = Field(default=10, ge=5, le=20)
 
 

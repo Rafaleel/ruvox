@@ -205,14 +205,14 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "letter_to_sound" | "sound_to_letter" | "word_to_meaning";
+            type: "letter_to_sound" | "sound_to_letter" | "word_to_meaning" | "typing";
             /** Prompt */
             prompt: string;
             /**
              * Input Kind
-             * @constant
+             * @enum {string}
              */
-            input_kind: "choice";
+            input_kind: "choice" | "text";
             /** Options */
             options: string[];
             /** Item Ids */
@@ -225,7 +225,7 @@ export interface components {
              * @default mixed
              * @enum {unknown}
              */
-            mode: "mixed" | 1 | 2 | 3;
+            mode: "mixed" | 1 | 2 | 3 | 4;
             /**
              * Size
              * @default 10
