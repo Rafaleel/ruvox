@@ -24,18 +24,18 @@ Ruvox ("ru" + "vox", voice) is a **local-first desktop app** that teaches Russia
 | D3 | Frontend: Vite + React + TypeScript + Tailwind + React Router + TanStack Query. Built as a static SPA. No Next.js. | Tauri needs a static frontend; Next.js adds nothing without a server. |
 | D4 | The backend **serves the built frontend** at `/` (SPA fallback to `index.html`) and the API under `/api`. | The Tauri window and the phone load the exact same URL. |
 | D5 | Tauri 2 shell starts the backend as a **sidecar** and opens a window on it. Dev: spawns `uv run`. Release: bundled PyInstaller binary. | Thin shell, no rewrite. |
-| D6 | Sidecar handshake: the backend binds `127.0.0.1` on the port given by `--port` (default `0` = any free port; dev uses `--port 8000`), then prints one line `RUVOX_READY port=<n>` on stdout. Tauri reads it, then opens `http://127.0.0.1:<n>/`. The backend exits when its stdin closes (no orphans). | Free port, no race, no orphan processes. |
+| D6 | Sidecar handshake: the backend binds `127.0.0.1` on the port given by `--port` (default `0` = any free port; only `make dev-backend` uses fixed port `8000`, so the Vite proxy has a stable target), then prints one line `RUVOX_READY port=<n>` on stdout. Tauri reads it, then opens `http://127.0.0.1:<n>/`. The backend exits when its stdin closes (no orphans). | Free port, no race, no orphan processes. |
 | D7 | The Tauri window is created in Rust after the handshake. `tauri.conf.json` has no static windows; `frontendDist` points to a tiny `src-tauri/splash/` page shown while the backend starts. | The URL is only known at runtime. |
 | D8 | All data lives in the OS user data dir (`platformdirs`, app name `ruvox`), overridable with `RUVOX_DATA_DIR`. Never in the repo. | Local-first, safe upgrades. |
 | D9 | The API key and model live in `<data dir>/config.json` (file mode 0600), editable from the Settings screen. `ANTHROPIC_API_KEY` env var overrides. | Simplest secure-enough option for a single-user local app. |
 | D10 | Types flow backend to frontend: FastAPI OpenAPI schema generates `frontend/src/api/schema.d.ts` with `openapi-typescript`. The frontend never parses free text. | One source of truth. |
-| D11 | Agent outputs are structured (Pydantic models; the exact Agno parameter name is fixed in ADR 0004). Python validators check the content after the model call. On failure: retry once, then fall back to the no-LLM path. | The LLM is never trusted blindly. |
+| D11 | Agent outputs are structured Pydantic models (in current Agno 3.x the parameter is `output_schema`; confirm in ADR 0004). Python validators check the content after the model call. On failure: retry once, then fall back to the no-LLM path. | The LLM is never trusted blindly. |
 | D12 | The spaced-repetition (SRS) service is the only writer of `ReviewState`. Agents may select and order among candidates the SRS service provides; they never create or change schedules. | An agent cannot corrupt a learner's schedule. |
 | D13 | User memory is our own tables (`UserProfile`, `ReviewState`, `Attempt`), not Agno's memory. Summaries are passed into prompts. | Testable, local, easy to inspect. |
 | D14 | Single user per install, but all tables keep `user_id` (default user id 1, created on first run). | Matches the spec and keeps a future option open. |
 | D15 | Security: backend binds `127.0.0.1` only (until the Phase 4 LAN toggle); a Host-header allow-list (`localhost`, `127.0.0.1`, and the LAN IP when enabled) blocks DNS rebinding; no wildcard CORS. | Other local processes and web pages must not drive the API or spend the API key. |
 | D16 | Target platform: Linux x86_64 first (owner runs Arch). Windows and macOS are best-effort later. | Scope. |
-| D17 | Task runner: root `Makefile` (`make dev`, `make check`, `make build-sidecar`). | Present on every dev machine. |
+| D17 | Task runner: root `Makefile`, created in P0-4 (`dev`, `dev-backend`, `build-frontend`) and extended in P0-5/P0-6 (`build-sidecar`, `check`). | Present on every dev machine. |
 
 Toolchain: Python 3.12 (`.python-version`), `uv`, Node 24, `pnpm` 11, Rust stable, Tauri 2.
 
@@ -116,8 +116,8 @@ All under `/api`. JSON only. Errors use `{"detail": ...}`.
 
 - `GET /health` returns `{"status": "ok"}`.
 - `GET /items?kind=letter|word|expression&source=seed|song` returns the item reference list.
-- `POST /sessions` with `{mode: "mixed"|1|2|3|..., size}` returns `{session_id, questions: [QuestionOut]}`. `QuestionOut` never contains the answer.
-- `POST /sessions/{id}/answers` with `{question_id, answer, time_ms}` returns `{correct, grade, correct_answer, explanation}`.
+- `POST /sessions` with `{mode: "mixed"|1|2|3|..., size}` returns `{session_id, source: "offline"|"ai", questions: [QuestionOut]}` (`source` is always `offline` in Phase 1; the UI badge in P2-6 reads it). `QuestionOut` never contains the answer.
+- `POST /sessions/{id}/answers` with `{question_id, answer, time_ms}` returns `{correct, grade, correct_answer, explanation, requeued_question?}`; `requeued_question` is a `QuestionOut` the client appends when a wrong item is requeued.
 - `POST /sessions/{id}/finish` returns `{score, answered, correct, items_to_review}`.
 - `GET /progress` returns `{due_count, groups: [{group, total, learned}], words_unlocked, ...}`.
 - Phase 2: `GET/PUT /settings`, `POST /settings/test-llm`.
@@ -154,7 +154,7 @@ These are copied from the owner's global Claude instructions (`~/.claude/CLAUDE.
 
 ### Task rules
 
-- One task = one branch = one PR = one GitHub issue. The branch is cut from an up-to-date `main`: `<type>/<short-description>`.
+- One task = one branch = one PR = one GitHub issue. The owner decides when the issues for the plan's tasks are created (ask first, they go in the matching phase milestone, with an `agent:*` label); until then refer to tasks by their PLAN id. The branch is cut from an up-to-date `main`: `<type>/<short-description>`.
 - Work tasks in order. Do not start a task before its dependencies are merged.
 - PR under about 400 changed lines, excluding lockfiles and generated files. If a task needs more, split it and tell the owner. Use `.github/pull_request_template.md` and link the issue with `Closes #N`. Merges are squash merges, with a Conventional Commits message.
 - Tests ship with the feature. Mock the LLM in every test. No network in tests.
@@ -182,6 +182,7 @@ Branch `feat/backend-scaffold`. Depends on: P0-1.
 - `config.py`: data dir (D8), `config.json` read/write helper (D9). `db.py`: engine in the data dir, `run_migrations()` called at startup.
 - All tables from section 3 except the Phase 2 ones, plus the first Alembic migration. Create the default `User` on first run.
 - Alphabet seed from `app/data/alphabet.json`: 33 letters in 3 groups. Group 1 (same look and sound): А К М О Т. Group 2 (look Latin, sound different): В Е Н Р С У Х. Group 3 (new letters): Б Г Д Ё Ж З И Й Л П Ф Ц Ч Ш Щ Ъ Ы Ь Э Ю Я. Each letter has an approximate pt-BR pronunciation (e.g. `Ч`: "tch, como em 'tchau'"). The seed is idempotent.
+- `app/openapi.py`: `python -m app.openapi` prints the OpenAPI JSON without starting a server (used by the frontend's `gen:api` and its CI check).
 - `sidecar.py` implements D6: port 0, `RUVOX_READY port=<n>`, exit on stdin EOF. Flags: `--host` (default 127.0.0.1) and `--port` (default 0, any free port).
 - Add `.github/workflows/ci.yml` with the **backend job** (`uv python install 3.12`, `uv sync --frozen`, ruff check, ruff format --check, mypy, pytest) so this PR already runs CI.
 - Tests: 33 letters, 5/7/21 split, seed idempotent, health, Host guard rejects `Host: evil.com`, migrations apply on an empty data dir, sidecar prints the handshake line (subprocess test).
@@ -191,33 +192,33 @@ Branch `feat/backend-scaffold`. Depends on: P0-1.
 Branch `feat/frontend-scaffold`. Depends on: P0-2.
 - Vite + React + TS + Tailwind + React Router + TanStack Query. `pnpm` scripts: `dev`, `build` (outDir `../backend/app/web`), `lint`, `format:check`, `typecheck`, `test`, `gen:api`.
 - Vite dev server proxies `/api` to `http://127.0.0.1:8000`.
-- `gen:api` runs `openapi-typescript` against the backend OpenAPI JSON and writes `src/api/schema.d.ts` (committed). A small typed `api` client wraps `fetch`.
+- `gen:api` runs `uv run --project ../backend python -m app.openapi` and pipes the JSON to `openapi-typescript`, writing `src/api/schema.d.ts` (committed). A small typed `api` client wraps `fetch`.
 - Home page: title "Ruvox", the line "Aprenda russo, do alfabeto às músicas.", and a health indicator calling `/api/health`.
 - Mobile-first layout (360 px wide works), dark and light via `prefers-color-scheme`.
-- Add the **frontend job** to `ci.yml` (pnpm install --frozen-lockfile, lint, format:check, typecheck, test, build, and a check that `gen:api` leaves no diff).
+- Add the **frontend job** to `ci.yml` (set up `uv` too, for `gen:api`; pnpm install --frozen-lockfile, lint, format:check, typecheck, test, build, and a check that `gen:api` leaves no diff).
 - Tests (vitest + Testing Library): home renders; health indicator shows ok and error states with a mocked fetch.
 - Acceptance: `pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build` pass; opening the backend URL shows the built SPA.
 
 ### P0-4 Tauri shell
 Branch `feat/tauri-shell`. Depends on: P0-3.
 - `src-tauri/` with Tauri 2: no static windows (D7), splash page, a Rust `setup` hook that spawns the backend sidecar, reads stdout until `RUVOX_READY`, then creates the window on the URL. Show an error page if the handshake does not arrive within 20 s.
-- Dev mode (`cfg!(debug_assertions)`) has exactly one path: spawn `uv run python -m app.sidecar --port 8000` in `backend/`, read the handshake, and open the window on the backend URL, which serves the SPA built by `make build-frontend`. The Vite dev server is **not** used by the Tauri window.
-- For fast frontend work in a plain browser (hot reload), run `make dev-backend` (the sidecar on port 8000) and `pnpm dev` in `frontend/` (proxy `/api` to port 8000).
+- Dev mode (`cfg!(debug_assertions)`) has exactly one path: spawn `uv run python -m app.sidecar` (port 0) in `backend/`, read the handshake, and open the window on the backend URL, which serves the SPA built by `make build-frontend`. The Vite dev server is **not** used by the Tauri window.
+- For fast frontend work in a plain browser (hot reload), run `make dev-backend` (the sidecar on fixed port 8000; do not run it together with `make dev`) and `pnpm dev` in `frontend/` (proxy `/api` to port 8000).
 - Kill the child on `RunEvent::Exit`. The stdin-EOF watcher (D6) is the safety net.
-- `make dev`: build frontend, start `pnpm tauri dev`. `make dev-backend`: run the sidecar on port 8000 for browser-only work.
+- Create the root `Makefile` here: `build-frontend`, `dev` (build frontend, start `pnpm tauri dev`) and `dev-backend` (run the sidecar on port 8000 for browser-only work).
 - Add the **tauri job** to `ci.yml`: install `libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev`, create an empty placeholder sidecar file (`tauri-build` requires the `externalBin` path to exist), then `cargo clippy -- -D warnings` and `cargo test`.
 - Tests: Rust unit test for the handshake parser. Manual acceptance: `make dev` opens a window with "Ruvox" and the health indicator green; closing the window leaves no `python` process behind (`pgrep -f app.sidecar` is empty).
 
 ### P0-5 Packaging spike (de-risk early)
-Branch `chore/sidecar-packaging-spike`. Depends on: P0-2.
+Branch `chore/sidecar-packaging-spike`. Depends on: P0-2, P0-3 (it bundles the built `app/web`).
 - `uv add --dev pyinstaller` and run it with `uv run pyinstaller` (the system `pyinstaller` uses a different Python and will not see the project venv).
 - `scripts/build-sidecar.sh`: PyInstaller build of `app.sidecar` into `src-tauri/binaries/ruvox-backend-<target-triple>` (get the triple from `rustc -vV`). Bundle `alembic/` and `alembic.ini` as data files, plus `app/web` and `app/data`.
 - Temporarily add `agno` and `anthropic` to the backend dependencies and import them in the sidecar startup path (guarded import is fine) to prove they freeze. Keep the dependencies; Phase 2 uses them.
-- Acceptance: the frozen binary starts with an empty `RUVOX_DATA_DIR`, runs migrations, seeds the alphabet, prints the handshake, and answers `/api/health`. Compare **one-file** and **one-dir** builds: size and cold startup time (one-file unpacks on every launch, which works against the 4 s startup target in P4-6). If one-dir wins, ship the directory as Tauri `resources` and spawn the binary from there. Record the choice, sizes, startup times and any hidden imports in `docs/adr/0004-sidecar-packaging.md`. Also record there the installed **Agno version**, the exact name of its structured-output parameter, and its Team API (names used elsewhere in this plan are placeholders until then). If Agno cannot be frozen, stop and report to the owner before Phase 2.
+- Acceptance: the frozen binary starts with an empty `RUVOX_DATA_DIR`, runs migrations, seeds the alphabet, prints the handshake, and answers `/api/health`. Compare **one-file** and **one-dir** builds: size and cold startup time (one-file unpacks on every launch, which works against the 4 s startup target in P4-6). If one-dir wins, ship the directory as Tauri `resources` and spawn the binary from there. Record the choice, sizes, startup times and any hidden imports in `docs/adr/0004-sidecar-packaging.md`. Also record there the installed **Agno version** (latest known: 3.2.1), the structured-output parameter (`output_schema` expected) and the Team API (`Team(mode=TeamMode.coordinate|route|broadcast|tasks)` expected), plus whether the Agno Claude model class accepts the default model id. Where this plan says otherwise, ADR 0004 wins. If Agno cannot be frozen, stop and report to the owner before Phase 2.
 
 ### P0-6 Makefile and branch protection
-Branch `ci/make-check`. Depends on: P0-2, P0-3, P0-4.
-- Root `Makefile`: `check` (all gates from `AGENTS.md`), `dev`, `dev-backend`, `build-frontend`, `build-sidecar`. CI jobs call the same commands where practical.
+Branch `ci/make-check`. Depends on: P0-2, P0-3, P0-4, P0-5.
+- Extend the root `Makefile`: `check` (all gates from `AGENTS.md`) and `build-sidecar` (wraps `scripts/build-sidecar.sh`). CI jobs call the same commands where practical.
 - Acceptance: `make check` passes locally and CI is green on this PR (all three jobs exist since P0-2 to P0-4). Afterwards the owner decides branch protection (GitHub blocks it for private repos on the free plan); required status checks can only be added once CI has run green once. Record the choice in HANDOFF.
 
 ## 9. Phase 1: game without AI (milestone "Phase 1: game without AI")
@@ -249,7 +250,7 @@ Branch `feat/question-builder`. Depends on: P1-3.
 ### P1-5 Session and progress API
 Branch `feat/session-api`. Depends on: P1-4.
 - Endpoints from section 5. Persist `StudySession`, `Question`, `Attempt`; update `ReviewState` through the SRS service on each answer; `finish` computes the score (correct answers) and `items_to_review` (wrong items).
-- Wrong items are requeued once in the same session (`POST /answers` may return `requeued_question` which the client appends).
+- Wrong items are requeued once in the same session (`POST /sessions/{id}/answers` may return `requeued_question`, which the client appends).
 - Tests: a full session with the TestClient end to end; unknown session or question returns 404; answering twice is rejected; `QuestionOut` never leaks the answer.
 
 ### P1-6 Frontend app shell
@@ -292,14 +293,14 @@ Branch `feat/generator-agent`. Depends on: P2-3.
 - Tests: valid output, duplicate prompts rejected, answer-not-in-options rejected, fallback path.
 
 ### P2-5 Corrector agent and mode 4 (typing)
-Branch `feat/corrector-typing`. Depends on: P2-1, P1-5.
+Branch `feat/corrector-typing`. Depends on: P2-1, P1-5, P1-7.
 - Backend: question type `typing` (`input_kind=text`). Answer flow: the deterministic checker runs first (case, `ё`/`е`); an exact normalized match returns grade 5 with **no LLM call**. Otherwise the Corrector agent returns `Correction{correct, grade 0-5, explanation_pt, normalized_answer}`; offline fallback is strict comparison (grade 1 on a miss, generic explanation).
 - Frontend: typing question UI with an **on-screen Cyrillic keyboard** component (phones and desktops without a Russian layout), plus physical keyboard input.
 - Tests: normalization cases, no-LLM path on exact match, near miss goes through the agent (fake), fallback grade, keyboard component renders the 33 letters.
 
 ### P2-6 Team, memory and orchestration
 Branch `feat/session-team`. Depends on: P2-3, P2-4, P2-5.
-- Agno `Team` (mode and API per ADR 0004) as `SessionTeam` facade used by `POST /sessions` when a key exists: planner then generator, with an overall 25 s budget, then fallback. The response includes `source: "ai" | "offline"`; the UI shows a small badge.
+- Agno `Team` (mode and API per ADR 0004) as `SessionTeam` facade used by `POST /sessions` when a key exists: planner then generator, with an overall 25 s budget, then fallback. The `source` field of the `POST /sessions` response is `ai` or `offline`; the UI shows a small badge.
 - After each session update `UserProfile` (level estimate, weak points = items with the most misses, preferences) from attempts; feed its summary to the planner.
 - Tests: ai path, offline path, partial failure, profile update.
 
@@ -329,14 +330,14 @@ Branch `feat/song-focus`. Depends on: P3-2, P2-6.
 
 ### P3-4 Mode 5: flashcards
 Branch `feat/mode-flashcards`. Depends on: P1-7.
-- `input_kind=flip`. Card shows the Russian side; tap to reveal pronunciation and meaning; buttons "Sabia" (grade 4) and "Errei" (grade 1). Works offline for seed and song items.
+- `input_kind=flip`. Card shows the Russian side; tap to reveal pronunciation and meaning; buttons "Sabia" (grade 4) and "Errei" (grade 1). Works offline and with any item, seed or song (song items appear once P3-2 has saved some).
 
 ### P3-5 Mode 6: timed pairs
 Branch `feat/mode-pairs`. Depends on: P1-7.
 - `input_kind=pairs`: 6 pairs (Cyrillic to pt-BR meaning), 60 s countdown on the client. One answer submission per round with the match results; grade per item per section 4.
 
 ### P3-6 Mode 7: cloze
-Branch `feat/mode-cloze`. Depends on: P3-2, P2-4.
+Branch `feat/mode-cloze`. Depends on: P3-2, P2-4, P2-5.
 - Short sentence with a blank for a song or seed word. Source of the sentence: the stored `excerpt` (offline) or a generator-written sentence (AI, never a lyric copy beyond 8 words). Options or typed answer, checked like mode 3 or mode 4.
 
 ## 12. Phase 4: polish and packaging (milestone "Phase 4: polish")
@@ -349,7 +350,7 @@ Branch `feat/progress-streak`. Depends on: P1-8.
 
 ### P4-2 Phone access (LAN mode)
 Branch `feat/lan-access`. Depends on: P2-2.
-- Settings toggle "Permitir acesso pelo celular" (default off). When on, the sidecar restarts bound to `0.0.0.0` on a stable port saved in config, the Host guard also allows the LAN IP, and the screen shows the URL and a QR code.
+- Settings toggle "Permitir acesso pelo celular" (default off). The toggle is changed only from loopback clients (the desktop window); the phone cannot change it. The backend writes the new host and port to `config.json` and exits with code 75 ("restart requested"); the Rust shell watches the child, respawns it with the saved host/port, reads the new handshake and reloads the window. No Tauri IPC from the page is needed. When on, the sidecar binds `0.0.0.0` on a stable port saved in config, the Host guard also allows the LAN IP, and the screen shows the URL and a QR code.
 - **Pairing:** a 6-digit code shown in the desktop app; the phone enters it once and receives a signed cookie. All `/api` calls from non-loopback clients require that cookie; loopback stays open. Rate-limit pairing attempts. Note in the UI that anyone paired can use the API key.
 
 ### P4-3 Backup and reset

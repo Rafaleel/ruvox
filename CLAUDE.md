@@ -39,7 +39,7 @@ These mirror the owner's global Claude instructions (`~/.claude/CLAUDE.md`, "Flu
 
 ## Rules for the agents and the LLM layer
 
-- Every agent output is structured (`response_model` with Pydantic). The frontend never parses free text.
+- Every agent output is a structured Pydantic schema (in current Agno 3.x the parameter is `output_schema`; confirm in `docs/adr/0004`). The frontend never parses free text.
 - Python validators check agent output; on failure retry once, then fall back to the no-LLM path.
 - Agent prompts live in `backend/app/agents/prompts/` as versioned `.md` files.
 - Keep a single provider seam (`agents/llm.py`). The model comes from settings.
@@ -59,7 +59,7 @@ These mirror the owner's global Claude instructions (`~/.claude/CLAUDE.md`, "Flu
 Run before declaring a task done (once `make check` exists, use it):
 
 - Backend (`backend/`): `uv run ruff check . && uv run ruff format --check . && uv run mypy . && uv run pytest`
-- Frontend (`frontend/`): `pnpm lint && pnpm format:check && pnpm typecheck && pnpm test`
+- Frontend (`frontend/`): `pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build`
 - Tauri (`src-tauri/`): `cargo clippy -- -D warnings && cargo test`
 
 ## Roles
