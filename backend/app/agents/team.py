@@ -44,8 +44,10 @@ class SessionTeam:
         self.clock = clock
         self.rng = rng or random.Random()
 
-    def prepare(self, user_id: int, size: int, mode: int | None) -> PreparedSession:
-        seed_planner = SeedContentPlanner(self.db)
+    def prepare(
+        self, user_id: int, size: int, mode: int | None, song_id: int | None = None
+    ) -> PreparedSession:
+        seed_planner = SeedContentPlanner(self.db, song_id=song_id)
         seed_generator = SeedQuestionGenerator(self.db, self.rng)
         if self.llm is None:
             plan = seed_planner.select(user_id, size)

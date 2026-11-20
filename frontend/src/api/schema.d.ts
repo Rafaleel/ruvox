@@ -413,6 +413,8 @@ export interface components {
              * @enum {unknown}
              */
             mode: "mixed" | 1 | 2 | 3 | 4;
+            /** Song Id */
+            song_id?: number | null;
             /**
              * Size
              * @default 10
