@@ -130,6 +130,14 @@ fn show_error(app: &AppHandle) {
 
 fn main() {
     tauri::Builder::default()
+        // Must be the first plugin: a second launch focuses the open window instead of
+        // starting a second backend on the same database.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+        }))
         .manage(Backend::default())
         .setup(|app| {
             WebviewWindowBuilder::new(app, "startup", WebviewUrl::App("index.html".into()))
