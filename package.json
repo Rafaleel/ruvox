@@ -1,0 +1,6 @@
+{
+  "name": "ruvox",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "scripts": { "tauri": "frontend/node_modules/.bin/tauri" }
+}

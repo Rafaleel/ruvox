@@ -40,3 +40,6 @@ next-env.d.ts
 .DS_Store
 .idea/
 .vscode/
+
+# Tauri-generated development schemas
+/src-tauri/gen/schemas/
