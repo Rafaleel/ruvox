@@ -21,7 +21,7 @@ These mirror the owner's global Claude instructions (`~/.claude/CLAUDE.md`, "Flu
 
 - Work on a **branch per part of the work** (`feat/...`, `fix/...`, `docs/...`; also `chore/`, `ci/`, `test/`, `refactor/`). **Never commit directly to `main`.** Small follow-up requests on the same part reuse the same branch; do not stack one branch per request.
 - Make **small, frequent local commits** while developing.
-- **Push, PR and merge only with the owner's explicit authorization**, after a whole section is ready and verified.
+- **Push, PR and merge only with the owner's explicit authorization**, after a whole section is ready and verified. In `docs/PLAN.md`, one task (one PR) is one section: finish and verify the task, update HANDOFF, then stop and ask. Do not start a dependent task until the owner has merged the task it depends on.
 - When creating a **new repository**, always ask the owner whether it should be private or public. Never assume.
 - Commits and PRs use the repo's language (English).
 - Commits: Conventional Commits, `type(scope): imperative description`. Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `ci`, `style`, `perf`. Each commit builds and passes lint.

@@ -24,12 +24,12 @@ Ruvox ("ru" + "vox", voice) is a **local-first desktop app** that teaches Russia
 | D3 | Frontend: Vite + React + TypeScript + Tailwind + React Router + TanStack Query. Built as a static SPA. No Next.js. | Tauri needs a static frontend; Next.js adds nothing without a server. |
 | D4 | The backend **serves the built frontend** at `/` (SPA fallback to `index.html`) and the API under `/api`. | The Tauri window and the phone load the exact same URL. |
 | D5 | Tauri 2 shell starts the backend as a **sidecar** and opens a window on it. Dev: spawns `uv run`. Release: bundled PyInstaller binary. | Thin shell, no rewrite. |
-| D6 | Sidecar handshake: the backend binds `127.0.0.1:0`, then prints one line `RUVOX_READY port=<n>` on stdout. Tauri reads it, then opens `http://127.0.0.1:<n>/`. The backend exits when its stdin closes (no orphans). | Free port, no race, no orphan processes. |
+| D6 | Sidecar handshake: the backend binds `127.0.0.1` on the port given by `--port` (default `0` = any free port; dev uses `--port 8000`), then prints one line `RUVOX_READY port=<n>` on stdout. Tauri reads it, then opens `http://127.0.0.1:<n>/`. The backend exits when its stdin closes (no orphans). | Free port, no race, no orphan processes. |
 | D7 | The Tauri window is created in Rust after the handshake. `tauri.conf.json` has no static windows; `frontendDist` points to a tiny `src-tauri/splash/` page shown while the backend starts. | The URL is only known at runtime. |
 | D8 | All data lives in the OS user data dir (`platformdirs`, app name `ruvox`), overridable with `RUVOX_DATA_DIR`. Never in the repo. | Local-first, safe upgrades. |
 | D9 | The API key and model live in `<data dir>/config.json` (file mode 0600), editable from the Settings screen. `ANTHROPIC_API_KEY` env var overrides. | Simplest secure-enough option for a single-user local app. |
 | D10 | Types flow backend to frontend: FastAPI OpenAPI schema generates `frontend/src/api/schema.d.ts` with `openapi-typescript`. The frontend never parses free text. | One source of truth. |
-| D11 | Agent outputs are structured (`response_model` with Pydantic). Python validators check the content after the model call. On failure: retry once, then fall back to the no-LLM path. | The LLM is never trusted blindly. |
+| D11 | Agent outputs are structured (Pydantic models; the exact Agno parameter name is fixed in ADR 0004). Python validators check the content after the model call. On failure: retry once, then fall back to the no-LLM path. | The LLM is never trusted blindly. |
 | D12 | The spaced-repetition (SRS) service is the only writer of `ReviewState`. Agents may select and order among candidates the SRS service provides; they never create or change schedules. | An agent cannot corrupt a learner's schedule. |
 | D13 | User memory is our own tables (`UserProfile`, `ReviewState`, `Attempt`), not Agno's memory. Summaries are passed into prompts. | Testable, local, easy to inspect. |
 | D14 | Single user per install, but all tables keep `user_id` (default user id 1, created on first run). | Matches the spec and keeps a future option open. |
@@ -148,7 +148,7 @@ These are copied from the owner's global Claude instructions (`~/.claude/CLAUDE.
 
 - Work on a **branch per part of the work** (`feat/...`, `fix/...`, `docs/...`, also `chore/`, `ci/`, `test/`, `refactor/`). **Never commit directly to `main`.** Small follow-up requests on the same part reuse the same branch; do not stack one branch per request.
 - Make **small, frequent local commits** while developing (Conventional Commits in English, e.g. `feat(backend): add srs service`; each commit builds and passes lint).
-- **Push, open a PR and merge only with the owner's explicit authorization**, after a whole section is ready and verified. When a task is done, update `.ai/HANDOFF.md`, then stop and ask.
+- **Push, open a PR and merge only with the owner's explicit authorization**, after a whole section is ready and verified. In this plan, **one PLAN task (one PR) is one section**: when a task is done and verified, update `.ai/HANDOFF.md`, then stop and ask the owner to authorize push and PR. Do not start a dependent task until the owner has merged the one it depends on.
 - When creating a **new repository**, always ask the owner whether it is private or public. Never assume.
 - Write commits, PR titles and bodies, code comments, names and docs in the language the repo already uses: **English** here (confirmed by the owner). User-facing UI text is pt-BR. If unsure which language to use, ask before writing.
 
@@ -168,8 +168,9 @@ These are copied from the owner's global Claude instructions (`~/.claude/CLAUDE.
 **Acceptance:** CI is green on a sample PR. `make dev` (or `pnpm tauri dev`) opens a desktop window showing "Ruvox" and a live `/api/health` check. A frozen sidecar binary starts, runs migrations and answers `/api/health`.
 
 ### P0-1 Repo base docs and templates
-Branch `chore/repo-base`. Depends on: none (`AGENTS.md`, `CLAUDE.md` and this plan already exist).
+Branch `chore/repo-base`. Depends on: the `docs/project-plan` branch (this plan, `AGENTS.md`, `CLAUDE.md`) being merged into `main` by the owner. Until then `main` contains only `.gitignore` and no task branch can be cut from it.
 - `README.md`: what it is, stack, setup in at most 5 commands, how to run the checks.
+- Extend `.gitignore` with `src-tauri/target/`, `src-tauri/binaries/` and `backend/app/web/` (the build output paths).
 - `.env.example` (only `ANTHROPIC_API_KEY`, `RUVOX_DATA_DIR`, `RUVOX_LLM_MODEL`), `.github/pull_request_template.md`, `.github/ISSUE_TEMPLATE/{feature,bug}.md`.
 - ADRs (short): `0001-stack`, `0002-sidecar-and-static-serving` (D4 to D7), `0003-data-dir-and-migrations` (D8, D9, Alembic).
 - Acceptance: files exist; README commands are accurate once later tasks land.
@@ -181,7 +182,8 @@ Branch `feat/backend-scaffold`. Depends on: P0-1.
 - `config.py`: data dir (D8), `config.json` read/write helper (D9). `db.py`: engine in the data dir, `run_migrations()` called at startup.
 - All tables from section 3 except the Phase 2 ones, plus the first Alembic migration. Create the default `User` on first run.
 - Alphabet seed from `app/data/alphabet.json`: 33 letters in 3 groups. Group 1 (same look and sound): А К М О Т. Group 2 (look Latin, sound different): В Е Н Р С У Х. Group 3 (new letters): Б Г Д Ё Ж З И Й Л П Ф Ц Ч Ш Щ Ъ Ы Ь Э Ю Я. Each letter has an approximate pt-BR pronunciation (e.g. `Ч`: "tch, como em 'tchau'"). The seed is idempotent.
-- `sidecar.py` implements D6: port 0, `RUVOX_READY port=<n>`, exit on stdin EOF. Flags: `--host` (default 127.0.0.1).
+- `sidecar.py` implements D6: port 0, `RUVOX_READY port=<n>`, exit on stdin EOF. Flags: `--host` (default 127.0.0.1) and `--port` (default 0, any free port).
+- Add `.github/workflows/ci.yml` with the **backend job** (`uv python install 3.12`, `uv sync --frozen`, ruff check, ruff format --check, mypy, pytest) so this PR already runs CI.
 - Tests: 33 letters, 5/7/21 split, seed idempotent, health, Host guard rejects `Host: evil.com`, migrations apply on an empty data dir, sidecar prints the handshake line (subprocess test).
 - Acceptance: `uv run ruff check . && uv run ruff format --check . && uv run mypy . && uv run pytest` pass.
 
@@ -192,28 +194,31 @@ Branch `feat/frontend-scaffold`. Depends on: P0-2.
 - `gen:api` runs `openapi-typescript` against the backend OpenAPI JSON and writes `src/api/schema.d.ts` (committed). A small typed `api` client wraps `fetch`.
 - Home page: title "Ruvox", the line "Aprenda russo, do alfabeto às músicas.", and a health indicator calling `/api/health`.
 - Mobile-first layout (360 px wide works), dark and light via `prefers-color-scheme`.
+- Add the **frontend job** to `ci.yml` (pnpm install --frozen-lockfile, lint, format:check, typecheck, test, build, and a check that `gen:api` leaves no diff).
 - Tests (vitest + Testing Library): home renders; health indicator shows ok and error states with a mocked fetch.
 - Acceptance: `pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build` pass; opening the backend URL shows the built SPA.
 
 ### P0-4 Tauri shell
 Branch `feat/tauri-shell`. Depends on: P0-3.
 - `src-tauri/` with Tauri 2: no static windows (D7), splash page, a Rust `setup` hook that spawns the backend sidecar, reads stdout until `RUVOX_READY`, then creates the window on the URL. Show an error page if the handshake does not arrive within 20 s.
-- Dev mode (`cfg!(debug_assertions)`): spawn `uv run python -m app.sidecar` in `backend/`; frontend via Vite devUrl is **not** used, the window loads the backend URL (run `make build-frontend` first) unless env `RUVOX_DEV_URL` points to the Vite server.
+- Dev mode (`cfg!(debug_assertions)`) has exactly one path: spawn `uv run python -m app.sidecar --port 8000` in `backend/`, read the handshake, and open the window on the backend URL, which serves the SPA built by `make build-frontend`. The Vite dev server is **not** used by the Tauri window.
+- For fast frontend work in a plain browser (hot reload), run `make dev-backend` (the sidecar on port 8000) and `pnpm dev` in `frontend/` (proxy `/api` to port 8000).
 - Kill the child on `RunEvent::Exit`. The stdin-EOF watcher (D6) is the safety net.
-- `make dev`: build frontend, start `pnpm tauri dev`.
+- `make dev`: build frontend, start `pnpm tauri dev`. `make dev-backend`: run the sidecar on port 8000 for browser-only work.
+- Add the **tauri job** to `ci.yml`: install `libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev`, create an empty placeholder sidecar file (`tauri-build` requires the `externalBin` path to exist), then `cargo clippy -- -D warnings` and `cargo test`.
 - Tests: Rust unit test for the handshake parser. Manual acceptance: `make dev` opens a window with "Ruvox" and the health indicator green; closing the window leaves no `python` process behind (`pgrep -f app.sidecar` is empty).
 
 ### P0-5 Packaging spike (de-risk early)
 Branch `chore/sidecar-packaging-spike`. Depends on: P0-2.
-- `scripts/build-sidecar.sh`: PyInstaller one-file build of `app.sidecar` into `src-tauri/binaries/ruvox-backend-<target-triple>` (get the triple from `rustc -vV`). Bundle `alembic/` and `alembic.ini` as data files, plus `app/web` and `app/data`.
+- `uv add --dev pyinstaller` and run it with `uv run pyinstaller` (the system `pyinstaller` uses a different Python and will not see the project venv).
+- `scripts/build-sidecar.sh`: PyInstaller build of `app.sidecar` into `src-tauri/binaries/ruvox-backend-<target-triple>` (get the triple from `rustc -vV`). Bundle `alembic/` and `alembic.ini` as data files, plus `app/web` and `app/data`.
 - Temporarily add `agno` and `anthropic` to the backend dependencies and import them in the sidecar startup path (guarded import is fine) to prove they freeze. Keep the dependencies; Phase 2 uses them.
-- Acceptance: the frozen binary starts with an empty `RUVOX_DATA_DIR`, runs migrations, seeds the alphabet, prints the handshake, and answers `/api/health`. Record binary size, startup time, and any hidden imports in `docs/adr/0004-sidecar-packaging.md`. If Agno cannot be frozen, stop and report to the owner before Phase 2.
+- Acceptance: the frozen binary starts with an empty `RUVOX_DATA_DIR`, runs migrations, seeds the alphabet, prints the handshake, and answers `/api/health`. Compare **one-file** and **one-dir** builds: size and cold startup time (one-file unpacks on every launch, which works against the 4 s startup target in P4-6). If one-dir wins, ship the directory as Tauri `resources` and spawn the binary from there. Record the choice, sizes, startup times and any hidden imports in `docs/adr/0004-sidecar-packaging.md`. Also record there the installed **Agno version**, the exact name of its structured-output parameter, and its Team API (names used elsewhere in this plan are placeholders until then). If Agno cannot be frozen, stop and report to the owner before Phase 2.
 
-### P0-6 CI and housekeeping
-Branch `ci/checks`. Depends on: P0-2, P0-3, P0-4.
-- Root `Makefile`: `check` (all gates below), `dev`, `build-frontend`, `build-sidecar`.
-- `.github/workflows/ci.yml` on `pull_request` and `push` to `main`: backend job (`uv python install 3.12`, `uv sync --frozen`, ruff check, ruff format --check, mypy, pytest), frontend job (pnpm install --frozen-lockfile, lint, format:check, typecheck, test, build, and check that `gen:api` leaves no diff), tauri job (install `libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev`, create an empty placeholder sidecar file because `tauri-build` requires the `externalBin` path to exist, then `cargo clippy -- -D warnings` and `cargo test`).
-- Acceptance: all three jobs green on the PR. Afterwards the owner decides branch protection (GitHub blocks it for private repos on the free plan); record the choice in HANDOFF.
+### P0-6 Makefile and branch protection
+Branch `ci/make-check`. Depends on: P0-2, P0-3, P0-4.
+- Root `Makefile`: `check` (all gates from `AGENTS.md`), `dev`, `dev-backend`, `build-frontend`, `build-sidecar`. CI jobs call the same commands where practical.
+- Acceptance: `make check` passes locally and CI is green on this PR (all three jobs exist since P0-2 to P0-4). Afterwards the owner decides branch protection (GitHub blocks it for private repos on the free plan); required status checks can only be added once CI has run green once. Record the choice in HANDOFF.
 
 ## 9. Phase 1: game without AI (milestone "Phase 1: game without AI")
 
@@ -294,7 +299,7 @@ Branch `feat/corrector-typing`. Depends on: P2-1, P1-5.
 
 ### P2-6 Team, memory and orchestration
 Branch `feat/session-team`. Depends on: P2-3, P2-4, P2-5.
-- Agno `Team` (coordinate mode) as `SessionTeam` facade used by `POST /sessions` when a key exists: planner then generator, with an overall 25 s budget, then fallback. The response includes `source: "ai" | "offline"`; the UI shows a small badge.
+- Agno `Team` (mode and API per ADR 0004) as `SessionTeam` facade used by `POST /sessions` when a key exists: planner then generator, with an overall 25 s budget, then fallback. The response includes `source: "ai" | "offline"`; the UI shows a small badge.
 - After each session update `UserProfile` (level estimate, weak points = items with the most misses, preferences) from attempts; feed its summary to the planner.
 - Tests: ai path, offline path, partial failure, profile update.
 
