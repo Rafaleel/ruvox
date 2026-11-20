@@ -35,7 +35,7 @@ def test_migrate_and_seed_twice(
     }
     with Session(engine) as session:
         assert session.get(User, 1)
-        letters = session.exec(select(Item)).all()
+        letters = session.exec(select(Item).where(Item.kind == "letter")).all()
         assert len(letters) == len({item.text for item in letters}) == 33
         assert Counter(item.group for item in letters) == {1: 5, 2: 7, 3: 21}
     engine.dispose()

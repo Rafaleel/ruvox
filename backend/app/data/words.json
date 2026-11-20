@@ -1,0 +1,302 @@
+[
+  {
+    "text": "банан",
+    "pronunciation": "ba-NÁN",
+    "meaning": "banana",
+    "difficulty": 1
+  },
+  {
+    "text": "метро",
+    "pronunciation": "mi-TRÔ",
+    "meaning": "metrô",
+    "difficulty": 1
+  },
+  {
+    "text": "кофе",
+    "pronunciation": "KÓ-fiê",
+    "meaning": "café",
+    "difficulty": 1
+  },
+  {
+    "text": "такси",
+    "pronunciation": "tak-SI",
+    "meaning": "táxi",
+    "difficulty": 1
+  },
+  {
+    "text": "банк",
+    "pronunciation": "bank",
+    "meaning": "banco",
+    "difficulty": 1
+  },
+  {
+    "text": "парк",
+    "pronunciation": "park",
+    "meaning": "parque",
+    "difficulty": 1
+  },
+  {
+    "text": "театр",
+    "pronunciation": "ti-Á-tr",
+    "meaning": "teatro",
+    "difficulty": 1
+  },
+  {
+    "text": "музыка",
+    "pronunciation": "MU-zi-ka",
+    "meaning": "música",
+    "difficulty": 1
+  },
+  {
+    "text": "футбол",
+    "pronunciation": "fud-BÓL",
+    "meaning": "futebol",
+    "difficulty": 1
+  },
+  {
+    "text": "фото",
+    "pronunciation": "FÓ-ta",
+    "meaning": "foto",
+    "difficulty": 1
+  },
+  {
+    "text": "радио",
+    "pronunciation": "RÁ-di-o",
+    "meaning": "rádio",
+    "difficulty": 1
+  },
+  {
+    "text": "студент",
+    "pronunciation": "stu-DIÊNT",
+    "meaning": "estudante",
+    "difficulty": 2
+  },
+  {
+    "text": "телефон",
+    "pronunciation": "ti-li-FÓN",
+    "meaning": "telefone",
+    "difficulty": 2
+  },
+  {
+    "text": "компьютер",
+    "pronunciation": "kam-PIÚ-ter",
+    "meaning": "computador",
+    "difficulty": 2
+  },
+  {
+    "text": "интернет",
+    "pronunciation": "in-ter-NÉT",
+    "meaning": "internet",
+    "difficulty": 2
+  },
+  {
+    "text": "ресторан",
+    "pronunciation": "ris-ta-RÁN",
+    "meaning": "restaurante",
+    "difficulty": 2
+  },
+  {
+    "text": "паспорт",
+    "pronunciation": "PÁS-part",
+    "meaning": "passaporte",
+    "difficulty": 2
+  },
+  {
+    "text": "университет",
+    "pronunciation": "u-ni-ver-si-TIÉT",
+    "meaning": "universidade",
+    "difficulty": 3
+  },
+  {
+    "text": "да",
+    "pronunciation": "da",
+    "meaning": "sim",
+    "difficulty": 1
+  },
+  {
+    "text": "нет",
+    "pronunciation": "niét",
+    "meaning": "não",
+    "difficulty": 1
+  },
+  {
+    "text": "привет",
+    "pronunciation": "pri-VIÉT",
+    "meaning": "oi",
+    "difficulty": 1
+  },
+  {
+    "text": "пока",
+    "pronunciation": "pa-KÁ",
+    "meaning": "tchau",
+    "difficulty": 1
+  },
+  {
+    "text": "спасибо",
+    "pronunciation": "spa-SI-ba",
+    "meaning": "obrigado(a)",
+    "difficulty": 2
+  },
+  {
+    "text": "пожалуйста",
+    "pronunciation": "pa-JÁ-lus-ta",
+    "meaning": "por favor / de nada",
+    "difficulty": 3
+  },
+  {
+    "text": "здравствуйте",
+    "pronunciation": "ZDRÁS-tvuy-tie",
+    "meaning": "olá (formal)",
+    "difficulty": 3
+  },
+  {
+    "text": "до свидания",
+    "pronunciation": "da svi-DÁ-ni-ya",
+    "meaning": "até logo",
+    "difficulty": 3
+  },
+  {
+    "text": "хорошо",
+    "pronunciation": "rra-ra-XÓ",
+    "meaning": "bem, bom",
+    "difficulty": 2
+  },
+  {
+    "text": "плохо",
+    "pronunciation": "PLÓ-rra",
+    "meaning": "mal, ruim",
+    "difficulty": 2
+  },
+  {
+    "text": "я",
+    "pronunciation": "ia",
+    "meaning": "eu",
+    "difficulty": 1
+  },
+  {
+    "text": "ты",
+    "pronunciation": "tɨ (som de ы)",
+    "meaning": "tu",
+    "difficulty": 1
+  },
+  {
+    "text": "он",
+    "pronunciation": "on",
+    "meaning": "ele",
+    "difficulty": 1
+  },
+  {
+    "text": "она",
+    "pronunciation": "a-NÁ",
+    "meaning": "ela",
+    "difficulty": 1
+  },
+  {
+    "text": "мы",
+    "pronunciation": "mɨ (som de ы)",
+    "meaning": "nós",
+    "difficulty": 1
+  },
+  {
+    "text": "вы",
+    "pronunciation": "vi",
+    "meaning": "vocês / o senhor",
+    "difficulty": 1
+  },
+  {
+    "text": "мама",
+    "pronunciation": "MÁ-ma",
+    "meaning": "mamãe",
+    "difficulty": 1
+  },
+  {
+    "text": "папа",
+    "pronunciation": "PÁ-pa",
+    "meaning": "papai",
+    "difficulty": 1
+  },
+  {
+    "text": "дом",
+    "pronunciation": "dom",
+    "meaning": "casa",
+    "difficulty": 1
+  },
+  {
+    "text": "вода",
+    "pronunciation": "va-DÁ",
+    "meaning": "água",
+    "difficulty": 1
+  },
+  {
+    "text": "хлеб",
+    "pronunciation": "rrliép",
+    "meaning": "pão",
+    "difficulty": 2
+  },
+  {
+    "text": "молоко",
+    "pronunciation": "ma-la-KÓ",
+    "meaning": "leite",
+    "difficulty": 2
+  },
+  {
+    "text": "чай",
+    "pronunciation": "tchai",
+    "meaning": "chá",
+    "difficulty": 1
+  },
+  {
+    "text": "друг",
+    "pronunciation": "druk",
+    "meaning": "amigo",
+    "difficulty": 1
+  },
+  {
+    "text": "любовь",
+    "pronunciation": "liu-BÓF",
+    "meaning": "amor",
+    "difficulty": 2
+  },
+  {
+    "text": "город",
+    "pronunciation": "GÓ-rat",
+    "meaning": "cidade",
+    "difficulty": 2
+  },
+  {
+    "text": "книга",
+    "pronunciation": "KNI-ga",
+    "meaning": "livro",
+    "difficulty": 2
+  },
+  {
+    "text": "школа",
+    "pronunciation": "XKÓ-la",
+    "meaning": "escola",
+    "difficulty": 2
+  },
+  {
+    "text": "день",
+    "pronunciation": "diên",
+    "meaning": "dia",
+    "difficulty": 2
+  },
+  {
+    "text": "ночь",
+    "pronunciation": "nótch",
+    "meaning": "noite",
+    "difficulty": 2
+  },
+  {
+    "text": "как дела",
+    "pronunciation": "kak di-LÁ",
+    "meaning": "como vai?",
+    "difficulty": 2
+  },
+  {
+    "text": "работа",
+    "pronunciation": "ra-BÓ-ta",
+    "meaning": "trabalho",
+    "difficulty": 2
+  }
+]

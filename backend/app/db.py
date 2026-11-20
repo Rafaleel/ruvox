@@ -41,17 +41,15 @@ def seed(session: Session) -> None:
         session.flush()
     existing = set(
         session.exec(
-            select(Item.text).where(
-                Item.kind == "letter", Item.source == "seed", Item.user_id == 1
-            )
+            select(Item.kind, Item.text).where(Item.source == "seed", Item.user_id == 1)
         )
     )
-    alphabet = json.loads((ROOT / "app/data/alphabet.json").read_text(encoding="utf-8"))
-    for letter in alphabet:
-        if letter["text"] not in existing:
-            session.add(
-                Item(kind="letter", source="seed", meaning=letter["text"], **letter)
-            )
+    for kind, filename in (("letter", "alphabet.json"), ("word", "words.json")):
+        entries = json.loads((ROOT / "app/data" / filename).read_text(encoding="utf-8"))
+        for entry in entries:
+            if (kind, entry["text"]) not in existing:
+                entry.setdefault("meaning", entry["text"])
+                session.add(Item(kind=kind, source="seed", **entry))
     session.commit()
 
 
