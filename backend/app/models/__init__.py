@@ -1,0 +1,79 @@
+from datetime import UTC, datetime
+
+from sqlalchemy import JSON, UniqueConstraint
+from sqlmodel import Field, SQLModel
+
+
+def now_utc() -> datetime:
+    return datetime.now(UTC)
+
+
+class User(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
+    created_at: datetime = Field(default_factory=now_utc)
+
+
+class Owned(SQLModel):
+    user_id: int = Field(default=1, foreign_key="user.id")
+
+
+class Song(Owned, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    title: str
+    artist: str
+    text: str
+    created_at: datetime = Field(default_factory=now_utc)
+
+
+class Item(Owned, table=True):
+    __table_args__ = (UniqueConstraint("user_id", "source", "kind", "text", "song_id"),)
+    id: int | None = Field(default=None, primary_key=True)
+    kind: str
+    text: str
+    pronunciation: str
+    meaning: str
+    source: str
+    group: int | None = None
+    difficulty: int = 1
+    song_id: int | None = Field(default=None, foreign_key="song.id")
+
+
+class StudySession(Owned, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    mode: str
+    started_at: datetime = Field(default_factory=now_utc)
+    ended_at: datetime | None = None
+    score: int = 0
+
+
+class Question(Owned, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    session_id: int = Field(foreign_key="studysession.id")
+    type: str
+    prompt: str
+    options: list[str] = Field(sa_type=JSON)
+    answer: str
+    explanation: str
+    item_ids: list[int] = Field(sa_type=JSON)
+    input_kind: str
+
+
+class Attempt(Owned, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    question_id: int = Field(foreign_key="question.id")
+    answer: str
+    correct: bool
+    grade: int
+    time_ms: int
+    created_at: datetime = Field(default_factory=now_utc)
+
+
+class ReviewState(SQLModel, table=True):
+    user_id: int = Field(default=1, foreign_key="user.id", primary_key=True)
+    item_id: int = Field(foreign_key="item.id", primary_key=True)
+    repetitions: int = 0
+    interval_days: int = 0
+    ease: float = 2.5
+    next_review: datetime = Field(default_factory=now_utc)
+    last_grade: int | None = None
