@@ -1,7 +1,7 @@
 import re
 from collections.abc import Iterable
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from app.agents.llm import StructuredLLM
 from app.services.answer_checker import normalize
@@ -13,17 +13,17 @@ CYRILLIC_WORD = re.compile(r"[а-яё]+(?:[ \-][а-яё]+)*")
 
 
 class VocabEntry(BaseModel):
-    text: str = Field(max_length=100)
-    lemma: str = Field(max_length=100)
-    pronunciation_pt: str = Field(max_length=100)
-    meaning_pt: str = Field(max_length=200)
-    part_of_speech: str = Field(default="", max_length=50)
-    excerpt: str = Field(default="", max_length=300)
+    text: str
+    lemma: str
+    pronunciation_pt: str
+    meaning_pt: str
+    part_of_speech: str = ""
+    excerpt: str = ""
 
 
 class GrammarPoint(BaseModel):
-    point_pt: str = Field(max_length=500)
-    excerpt: str = Field(default="", max_length=300)
+    point_pt: str
+    excerpt: str = ""
 
 
 class SongAnalysis(BaseModel):
@@ -81,7 +81,7 @@ def clean_analysis(
     for kind, pool in pools:
         for entry in pool:
             key = normalize(entry.lemma or entry.text)
-            if not is_cyrillic(entry.text) or key in seen:
+            if not is_cyrillic(entry.text) or key in seen or len(entry.text) > 100:
                 continue
             if not entry.pronunciation_pt.strip() or not entry.meaning_pt.strip():
                 continue
@@ -91,6 +91,10 @@ def clean_analysis(
                     **{
                         **entry.model_dump(),
                         "text": entry.text.strip(),
+                        "lemma": entry.lemma[:100],
+                        "pronunciation_pt": entry.pronunciation_pt.strip()[:100],
+                        "meaning_pt": entry.meaning_pt.strip()[:200],
+                        "part_of_speech": entry.part_of_speech[:50],
                         "excerpt": clean_excerpt(entry.excerpt, lyric, entry.text),
                     },
                     kind=kind,
@@ -99,7 +103,7 @@ def clean_analysis(
             )
     grammar = [
         GrammarPoint(
-            point_pt=point.point_pt.strip(),
+            point_pt=point.point_pt.strip()[:500],
             excerpt=clean_excerpt(point.excerpt, lyric),
         )
         for point in analysis.grammar

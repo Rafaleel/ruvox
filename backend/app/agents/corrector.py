@@ -1,6 +1,6 @@
 import json
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from app.agents.llm import LLMUnavailable, StructuredLLM
 from app.services.answer_checker import normalize
@@ -8,9 +8,9 @@ from app.services.answer_checker import normalize
 
 class Correction(BaseModel):
     correct: bool
-    grade: int = Field(ge=0, le=5)
-    explanation_pt: str = Field(max_length=500)
-    normalized_answer: str = Field(max_length=200)
+    grade: int  # 0 to 5, clamped by the server (schema ranges are not supported)
+    explanation_pt: str
+    normalized_answer: str
 
 
 class Verdict(BaseModel):
@@ -48,7 +48,9 @@ def review_typed_answer(
     except LLMUnavailable:
         return offline
     if normalize(result.normalized_answer) == normalize(expected):
-        return Verdict(correct=True, grade=4, explanation=result.explanation_pt)
+        return Verdict(correct=True, grade=4, explanation=result.explanation_pt[:500])
     return Verdict(
-        correct=False, grade=min(result.grade, 2), explanation=result.explanation_pt
+        correct=False,
+        grade=max(0, min(result.grade, 2)),
+        explanation=result.explanation_pt[:500],
     )

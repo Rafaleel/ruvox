@@ -83,7 +83,7 @@ Build output of the frontend goes to `backend/app/web/` (gitignored). The sideca
 
 Input: current state (`repetitions`, `interval_days`, `ease`) and `grade` 0 to 5.
 
-- `grade < 3`: `repetitions = 0`, `interval_days = 1`, `ease` unchanged. The item is also requeued in the same session (at most 2 times).
+- `grade < 3`: `repetitions = 0`, `interval_days = 1`; `ease` still follows the formula below (owner decision: errors lower it, floor 1.3). The item is also requeued in the same session (at most 2 times).
 - `grade >= 3`: `repetitions += 1`; interval is `1` on the first success, `6` on the second, then `round(previous_interval * ease)`.
 - Ease update on every answer: `ease = max(1.3, ease + 0.1 - (5 - g) * (0.08 + (5 - g) * 0.02))`. Start ease: 2.5.
 - `next_review = now + interval_days` (UTC; compare in UTC).
@@ -436,3 +436,18 @@ Content is an approximation for Brazilian speakers and must be reviewed by the o
 | 48 | ночь | nótch | noite | 2 |
 | 49 | как дела | kak di-LÁ | como vai? | 2 |
 | 50 | работа | ra-BÓ-ta | trabalho | 2 |
+
+## Appendix B: deviations from this plan, as built
+
+- **P1-2** started from Codex's unfinished files; Claude finished it (PR #66) after the owner moved all remaining tasks to Claude.
+- **Mode 4** (typing) is in Phase 2, with the on-screen Cyrillic keyboard (already noted in section 6).
+- **P2-6**: the session agents are coordinated in code, not with an Agno `Team` (ADR 0005).
+- **Cloze (mode 7)** uses stored song excerpts only; no AI-written sentences.
+- **Combined PRs**: modes 5 to 7 backend in one PR (#86); phone access settings, backup and pairing screens in one PR (#97).
+- **Structured outputs**: Anthropic rejects JSON-schema length and range keywords, so agent output models carry no `max_length` or `ge`/`le`; the limits are enforced in the validators and a test pins the schemas.
+- **LAN port**: if the saved phone-access port is busy the sidecar starts on a free port and reports it, instead of failing every launch.
+- **Tests** never touch the real user data directory (autouse `RUVOX_DATA_DIR` fixture).
+- **CI**: jobs have timeouts and apt retries after repeated hangs.
+- **Still owner decisions**: branch protection (GitHub blocks it for private repos on the free plan) and tagging a release.
+- **Not verified without an API key**: real model calls (run `python -m app.live_smoke` once), pairing from a real phone, the LAN restart inside a real Tauri window, the release workflow.
+

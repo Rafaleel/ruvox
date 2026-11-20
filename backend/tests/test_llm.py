@@ -109,3 +109,74 @@ def test_no_key_means_offline_mode(
     assert get_llm(db.get_bind()) is None  # type: ignore[arg-type]
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-env")
     assert isinstance(get_llm(db.get_bind()), AgnoLLM)  # type: ignore[arg-type]
+
+
+# Anthropic structured outputs reject these JSON-schema keywords with a 400, which the
+# fallbacks would silently turn into "offline forever". Limits belong in the validators.
+UNSUPPORTED_SCHEMA_KEYS = {
+    "minimum",
+    "maximum",
+    "exclusiveMinimum",
+    "exclusiveMaximum",
+    "multipleOf",
+    "minLength",
+    "maxLength",
+    "pattern",
+    "minItems",
+    "maxItems",
+    "uniqueItems",
+}
+
+
+def schema_keys(node: object) -> set[str]:
+    if isinstance(node, dict):
+        return set(node) | {
+            key for value in node.values() for key in schema_keys(value)
+        }
+    if isinstance(node, list):
+        return {key for value in node for key in schema_keys(value)}
+    return set()
+
+
+def test_agent_output_schemas_use_only_supported_keywords() -> None:
+    from app.agents.corrector import Correction
+    from app.agents.generator import GeneratedQuestions
+    from app.agents.music import SongAnalysis
+    from app.agents.planner import SessionPlan
+
+    for model in (Ping, SessionPlan, GeneratedQuestions, Correction, SongAnalysis):
+        assert not schema_keys(model.model_json_schema()) & UNSUPPORTED_SCHEMA_KEYS, (
+            model
+        )
+
+
+def test_long_model_output_is_trimmed_by_the_validators() -> None:
+    from app.agents.corrector import Correction
+    from app.agents.music import SongAnalysis, VocabEntry, clean_analysis
+
+    long = "а" * 400
+    result = clean_analysis(
+        SongAnalysis(
+            vocabulary=[
+                VocabEntry(
+                    text="кот", lemma="кот", pronunciation_pt=long, meaning_pt=long
+                ),
+                VocabEntry(text=long, lemma=long, pronunciation_pt="x", meaning_pt="y"),
+            ],
+            expressions=[],
+            grammar=[],
+        ),
+        "кот",
+        {},
+    )
+    assert [e.text for e in result.entries] == ["кот"]
+    assert (
+        len(result.entries[0].meaning_pt) == 200
+        and len(result.entries[0].pronunciation_pt) == 100
+    )
+    assert (
+        Correction(
+            correct=False, grade=9, explanation_pt="x", normalized_answer="y"
+        ).grade
+        == 9
+    )

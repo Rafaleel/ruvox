@@ -213,3 +213,34 @@ def test_the_sidecar_binds_the_network_only_when_enabled(
                 if process.stdin:
                     process.stdin.close()
                 process.wait(timeout=10)
+
+
+def test_a_busy_lan_port_falls_back_to_a_free_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import socket
+
+    monkeypatch.setenv("RUVOX_DATA_DIR", str(tmp_path))
+    with socket.socket() as taken:
+        taken.bind(("0.0.0.0", 0))
+        taken.listen()
+        busy = taken.getsockname()[1]
+        write_settings(Settings(lan_enabled=True, lan_port=busy, lan_secret="ab" * 32))
+        with subprocess.Popen(
+            [sys.executable, "-m", "app.sidecar"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            text=True,
+            env={**os.environ, "RUVOX_DATA_DIR": str(tmp_path)},
+        ) as process:
+            try:
+                port = read_ready(process)
+                assert port != busy
+                status, body = get(f"http://127.0.0.1:{port}/api/lan")
+                assert (
+                    status == 200 and body["port"] == port and body["running"] is True
+                )
+            finally:
+                if process.stdin:
+                    process.stdin.close()
+                process.wait(timeout=10)

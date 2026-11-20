@@ -23,6 +23,16 @@ def watch_parent(server: SidecarServer) -> None:
     server.should_exit = True
 
 
+def port_is_free(host: str, port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            probe.bind((host, port))
+        except OSError:
+            return False
+    return True
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -62,8 +72,14 @@ def main() -> None:
     lan = saved.lan_enabled
     host = args.host or ("0.0.0.0" if lan else "127.0.0.1")
     port = args.port if args.port is not None else (saved.lan_port if lan else 0)
+    if lan and args.port is None and not port_is_free(host, port):
+        # The saved port is taken: start on any free port rather than failing every launch
+        # (the app would only show its error page and Settings could never turn LAN off).
+        print(f"Port {port} is busy; using a free port instead.", file=sys.stderr)
+        port = 0
+    app = create_app(lan=lan)
     config = uvicorn.Config(
-        create_app(lan=lan),
+        app,
         host=host,
         port=port,
         proxy_headers=False,
@@ -72,6 +88,7 @@ def main() -> None:
     )
     server = SidecarServer(config)
     with config.bind_socket() as listener:
+        app.state.port = listener.getsockname()[1]  # what the phone must really use
         if not args.no_stdin_watch:
             threading.Thread(target=watch_parent, args=(server,), daemon=True).start()
         server.run(sockets=[listener])
