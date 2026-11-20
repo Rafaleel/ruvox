@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
-import { getProgress, health } from "./api/client";
+import { getProgress, getStats, health } from "./api/client";
 import { buttonClasses } from "./components/Button";
 import { Card } from "./components/Card";
 import { ErrorMessage } from "./components/ErrorMessage";
@@ -39,6 +39,13 @@ export function Home() {
     queryFn: ({ signal }) => getProgress(signal),
     retry: false,
   });
+  // The badge is optional: a failed stats request just hides it.
+  const stats = useQuery({
+    queryKey: ["stats"],
+    queryFn: ({ signal }) => getStats(signal),
+    retry: false,
+  });
+  const streak = stats.data?.streak;
   const connected = result.data?.status === "ok";
   const data = progress.data;
   return (
@@ -50,6 +57,16 @@ export function Home() {
         className={`${buttonClasses()} mt-6 min-h-16 w-full text-2xl`}
       >
         Jogar agora
+      </Link>
+
+      <Link
+        to="/alphabet"
+        className="mt-4 block rounded-xl border border-line bg-surface p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        <span className="block text-lg font-bold">Alfabeto</span>
+        <span className="block text-muted">
+          Consulte as letras russas e como se pronunciam.
+        </span>
       </Link>
 
       {progress.isPending && (
@@ -71,7 +88,18 @@ export function Home() {
               {data.due_count === 1 ? "item" : "itens"} para revisar agora
             </p>
           </Card>
-          <h2 className="mt-6 mb-3 text-lg font-bold">Seu progresso</h2>
+          <div className="mt-6 mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-bold">Seu progresso</h2>
+            {streak !== undefined && (
+              <Link
+                to="/progress"
+                className="min-h-11 rounded-full border border-line bg-surface px-4 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                <span aria-hidden="true">🔥 </span>
+                Sequência: {streak} {streak === 1 ? "dia" : "dias"}
+              </Link>
+            )}
+          </div>
           <div className="grid gap-4">
             {data.groups.map((g) => (
               <Stat

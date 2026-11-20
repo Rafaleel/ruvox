@@ -4,7 +4,7 @@ const links = [
   { to: "/", label: "Início", end: true },
   { to: "/play", label: "Jogar", end: false },
   { to: "/songs", label: "Músicas", end: false },
-  { to: "/alphabet", label: "Alfabeto", end: false },
+  { to: "/progress", label: "Progresso", end: false },
   { to: "/settings", label: "Configurações", end: false },
 ];
 
@@ -24,7 +24,7 @@ export function Layout() {
             to={to}
             end={end}
             className={({ isActive }) =>
-              `flex min-h-14 flex-1 items-center justify-center px-1 text-sm font-semibold focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent md:min-h-11 md:flex-none md:text-base md:justify-start md:rounded-lg md:px-3 ${
+              `flex min-h-14 flex-1 items-center justify-center px-0.5 text-xs font-semibold min-[400px]:text-sm focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent md:min-h-11 md:flex-none md:text-base md:justify-start md:rounded-lg md:px-3 ${
                 isActive ? "bg-surface text-accent" : "text-muted"
               }`
             }

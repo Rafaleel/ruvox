@@ -3,6 +3,7 @@ import { Alphabet } from "./Alphabet";
 import { Home } from "./Home";
 import { Layout } from "./Layout";
 import { Play } from "./Play";
+import { Progress } from "./Progress";
 import { Settings } from "./Settings";
 import { Songs } from "./Songs";
 
@@ -12,6 +13,7 @@ export function App() {
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="play" element={<Play />} />
+        <Route path="progress" element={<Progress />} />
         <Route path="songs" element={<Songs />} />
         <Route path="alphabet" element={<Alphabet />} />
         <Route path="settings" element={<Settings />} />

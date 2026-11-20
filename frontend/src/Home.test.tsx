@@ -5,6 +5,7 @@ import {
   mockFetch,
   progress,
   renderWithProviders,
+  stats,
   WithStatus,
 } from "./test-utils";
 
@@ -46,6 +47,31 @@ it("shows due count, group progress and words unlocked", async () => {
   expect(
     screen.getByRole("link", { name: "Jogar agora" }).getAttribute("href"),
   ).toBe("/play");
+});
+
+it("shows the streak badge and a visible alphabet link", async () => {
+  mockFetch({
+    "/api/health": { status: "ok" },
+    "/api/progress": progress,
+    "/api/stats": stats,
+  });
+  renderWithProviders(<Home />);
+  const badge = await screen.findByRole("link", { name: /Sequência: 1 dia/ });
+  expect(badge.getAttribute("href")).toBe("/progress");
+  expect(
+    screen.getByRole("link", { name: /Alfabeto/ }).getAttribute("href"),
+  ).toBe("/alphabet");
+});
+
+it("hides the streak badge when stats fail", async () => {
+  mockFetch({
+    "/api/health": { status: "ok" },
+    "/api/progress": progress,
+    "/api/stats": new WithStatus({}, 500),
+  });
+  renderWithProviders(<Home />);
+  expect(await screen.findByText("Seu progresso")).toBeTruthy();
+  expect(screen.queryByText(/Sequência/)).toBeNull();
 });
 
 it("offers a retry when progress fails to load", async () => {

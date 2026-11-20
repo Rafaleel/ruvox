@@ -19,6 +19,7 @@ export type AnalyzedEntry = Schemas["AnalyzedEntry"];
 export type SongAnalysis = Schemas["SongAnalysisOut"];
 export type ConfirmEntry = Schemas["ConfirmEntry"];
 export type ConfirmResult = Schemas["ConfirmOut"];
+export type Stats = Schemas["StatsOut"];
 
 /** Mirrors the backend limit; the API answers 413 above it. */
 export const MAX_LYRICS_CHARS = 20000;
@@ -105,3 +106,6 @@ export const analyzeSong = (id: number) =>
 
 export const confirmSong = (id: number, entries: ConfirmEntry[]) =>
   request<ConfirmResult>(`/api/songs/${id}/confirm`, post({ entries }));
+
+export const getStats = (signal?: AbortSignal) =>
+  request<Stats>("/api/stats", { signal });
