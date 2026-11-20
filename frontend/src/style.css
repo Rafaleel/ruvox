@@ -4,11 +4,14 @@
 :root {
   color-scheme: light dark;
   --paper: #f4f2ea;
+  --surface: #fbfaf5;
   --ink: #222a22;
   --muted: #515d50;
   --accent: #ba3c28;
+  --on-accent: #ffffff;
   --line: #c4c9bb;
   --success: #32663e;
+  --danger: #a32a1a;
   font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
   color: var(--ink);
   background: var(--paper);
@@ -16,63 +19,29 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --paper: #18221d;
+    --surface: #202c26;
     --ink: #f7f3e6;
     --muted: #bdc9b8;
     --accent: #ff9074;
+    --on-accent: #18221d;
     --line: #46544a;
     --success: #9ad39c;
+    --danger: #ff9a8a;
   }
 }
-.home {
-  max-width: 56rem;
-  margin: 0 auto;
-  padding: clamp(3rem, 12vh, 9rem) clamp(1.25rem, 6vw, 4rem);
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-line: var(--line);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
 }
-.book {
-  display: flex;
-  align-items: center;
-  height: 3.5rem;
-  margin-bottom: 2.5rem;
-}
-.book i {
-  width: 2rem;
-  height: 2.5rem;
-  background: var(--accent);
-  transform: skewY(16deg);
-  border-radius: 0.12rem 0.4rem 0 0;
-}
-.book i + i {
-  transform: skewY(-16deg);
-  border-radius: 0.4rem 0.12rem 0 0;
-}
-h1 {
-  font-size: clamp(4.5rem, 12vw, 8.5rem);
-  font-weight: 800;
-  letter-spacing: -0.07em;
-  line-height: 0.98;
-}
-.tagline {
-  max-width: 21ch;
-  margin-top: 1.4rem;
-  font-size: clamp(1.5rem, 4vw, 2.6rem);
-  line-height: 1.15;
-}
-.status {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  margin-top: 3rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-}
-.status::before {
-  content: "";
-  width: 0.65rem;
-  height: 0.65rem;
-  border-radius: 50%;
-  background: var(--muted);
-}
-.status[data-connected="true"]::before {
-  background: var(--success);
+
+body {
+  overflow-x: hidden;
 }

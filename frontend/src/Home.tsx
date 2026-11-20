@@ -9,20 +9,23 @@ export function Home() {
   });
   const connected = result.data?.status === "ok";
   return (
-    <main className="home">
-      <div className="book" aria-hidden="true">
-        <i />
-        <i />
-      </div>
-      <h1>Ruvox</h1>
-      <p className="tagline">Aprenda russo, do alfabeto às músicas.</p>
-      <p className="status" role="status" data-connected={connected}>
+    <>
+      <h1 className="text-6xl font-extrabold tracking-tighter">Ruvox</h1>
+      <p className="mt-3 text-xl">Aprenda russo, do alfabeto às músicas.</p>
+      <p
+        role="status"
+        className="mt-8 flex items-center gap-2.5 border-t border-line pt-4 text-muted"
+      >
+        <span
+          aria-hidden="true"
+          className={`size-2.5 rounded-full ${connected ? "bg-success" : "bg-muted"}`}
+        />
         {result.isPending
           ? "Conectando ao serviço local…"
           : connected
             ? "Serviço local conectado"
             : "Serviço local indisponível"}
       </p>
-    </main>
+    </>
   );
 }
