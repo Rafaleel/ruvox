@@ -1,4 +1,7 @@
+import subprocess
+import sys
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -6,7 +9,7 @@ from pydantic import SecretStr
 from sqlalchemy import inspect
 from sqlmodel import Session, select
 
-from app.config import Settings, read_settings, write_settings
+from app.config import Settings, effective_settings, read_settings, write_settings
 from app.db import database_engine, run_migrations, seed
 from app.models import Item, User
 
@@ -16,10 +19,10 @@ def test_migrate_and_seed_twice(
 ) -> None:
     monkeypatch.setenv("RUVOX_DATA_DIR", str(tmp_path))
     engine = database_engine()
-    for _ in range(2):
-        run_migrations(engine)
-        with Session(engine) as session:
-            seed(session)
+    run_migrations(engine)
+    with Session(engine) as session:
+        seed(session)
+        seed(session)
     assert set(inspect(engine).get_table_names()) == {
         "alembic_version",
         "user",
@@ -38,6 +41,26 @@ def test_migrate_and_seed_twice(
     engine.dispose()
 
 
+def test_concurrent_first_launch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("RUVOX_DATA_DIR", str(tmp_path))
+    startup = """
+from app.db import database_engine, run_migrations, seed
+from sqlmodel import Session
+engine = database_engine()
+run_migrations(engine)
+with Session(engine) as session:
+    seed(session)
+"""
+
+    def launch(_: int) -> None:
+        subprocess.run([sys.executable, "-c", startup], check=True, timeout=15)
+
+    with ThreadPoolExecutor(max_workers=3) as workers:
+        list(workers.map(launch, range(3)))
+
+
 def test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("RUVOX_DATA_DIR", str(tmp_path))
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
@@ -48,4 +71,5 @@ def test_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert (tmp_path / "config.json").stat().st_mode & 0o777 == 0o600
     assert read_settings() == stored
     monkeypatch.setenv("ANTHROPIC_API_KEY", "override")
-    assert read_settings().api_key == SecretStr("override")
+    assert effective_settings().api_key == SecretStr("override")
+    assert read_settings() == stored

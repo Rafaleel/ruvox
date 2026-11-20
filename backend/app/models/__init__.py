@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import JSON, UniqueConstraint
+from sqlalchemy import JSON, Index, UniqueConstraint, text
 from sqlmodel import Field, SQLModel
 
 
@@ -27,7 +27,18 @@ class Song(Owned, table=True):
 
 
 class Item(Owned, table=True):
-    __table_args__ = (UniqueConstraint("user_id", "source", "kind", "text", "song_id"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "source", "kind", "text", "song_id"),
+        Index(
+            "uq_seed_item",
+            "user_id",
+            "source",
+            "kind",
+            "text",
+            unique=True,
+            sqlite_where=text("song_id IS NULL"),
+        ),
+    )
     id: int | None = Field(default=None, primary_key=True)
     kind: str
     text: str

@@ -80,6 +80,13 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("user_id", "source", "kind", "text", "song_id"),
     )
+    op.create_index(
+        "uq_seed_item",
+        "item",
+        ["user_id", "source", "kind", "text"],
+        unique=True,
+        sqlite_where=sa.text("song_id IS NULL"),
+    )
     op.create_table(
         "question",
         sa.Column("user_id", sa.Integer(), nullable=False),
