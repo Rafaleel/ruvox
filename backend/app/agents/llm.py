@@ -36,8 +36,30 @@ PRICES_PER_MTOK: dict[str, tuple[float, float]] = {
 T = TypeVar("T", bound=BaseModel)
 
 
+def friendly_error(detail: str) -> str:
+    """A pt-BR explanation of an API failure; the raw detail stays in the log and table."""
+    text = detail.lower()
+    if "401" in text or "authentication" in text or "invalid x-api-key" in text:
+        return "A chave da API foi recusada. Confira a chave em Configurações."
+    if "403" in text or "permission" in text:
+        return "A chave não tem permissão para usar este modelo."
+    if "404" in text or "not_found" in text or "not found" in text:
+        return "Este modelo não está disponível para a sua chave. Troque o modelo em Configurações."
+    if "429" in text or "529" in text or "rate" in text or "overloaded" in text:
+        return "A API está sobrecarregada ou o limite de uso foi atingido. Tente de novo em instantes."
+    if "timeout" in text or "timed out" in text or "connect" in text:
+        return "Sem conexão com a API da Anthropic. Confira a internet."
+    if "400" in text or "invalid_request" in text:
+        return "A API recusou o pedido. O detalhe está no registro do app."
+    return "Não foi possível falar com o modelo agora."
+
+
 class LLMUnavailable(RuntimeError):
     """No key, a timeout, an API error or an unusable answer."""
+
+    def __init__(self, detail: str, user_message: str | None = None) -> None:
+        super().__init__(detail)
+        self.user_message = user_message or friendly_error(detail)
 
 
 class Ping(BaseModel):
@@ -91,7 +113,13 @@ class AgnoLLM:
                 input_tokens = result.metrics.input_tokens
                 output_tokens = result.metrics.output_tokens
             if not isinstance(result.content, schema):
-                raise LLMUnavailable("the model did not return the expected structure")
+                # Agno returns an API failure as plain text in `content` (status error).
+                detail = (
+                    result.content
+                    if isinstance(result.content, str)
+                    else "the model did not return the expected structure"
+                )
+                raise LLMUnavailable(detail)
             return result.content
         except LLMUnavailable as exc:
             error = str(exc)

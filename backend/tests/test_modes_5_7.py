@@ -125,3 +125,12 @@ def test_flashcards_and_cloze_never_call_the_model(client: TestClient) -> None:
     start(client, mode=5, size=5)
     start(client, mode=6, size=5)
     assert llm.calls == []
+
+
+def test_absurd_pairs_mistake_counts_do_not_crash(client: TestClient) -> None:
+    session = start(client, mode=6, size=5)
+    qid, sid = session["questions"][0]["id"], session["session_id"]
+    item = session["questions"][0]["pairs"][0]["item_id"]
+    response = answer(client, sid, qid, f'{{"{item}": 1e999}}')
+    assert response.status_code == 422
+    assert answer(client, sid, qid, f'{{"{item}": 99999999}}').status_code == 200

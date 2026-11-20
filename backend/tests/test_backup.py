@@ -147,3 +147,51 @@ def test_reset_keeps_settings(client: TestClient) -> None:
     client.post("/api/data/reset")
     settings = client.get("/api/settings").json()
     assert settings["has_key"] is True and settings["model"] == "claude-haiku-5-5"
+
+
+def test_hand_edited_backups_are_rejected_before_anything_changes(
+    client: TestClient,
+) -> None:
+    populate(client)
+    before = counts(client)
+    good: dict[str, Any] = client.post("/api/backup/export").json()
+
+    def broken(change: Any) -> dict[str, Any]:
+        data: dict[str, Any] = json.loads(json.dumps(good))
+        change(data)
+        return data
+
+    def score(d: dict[str, Any]) -> None:
+        d["sessions"][0]["score"] = "abc"
+
+    def lyric(d: dict[str, Any]) -> None:
+        d["songs"][0]["text"] = "а" * 30_000
+
+    def mode(d: dict[str, Any]) -> None:
+        d["sessions"][0]["mode"] = "bogus"
+
+    def kind(d: dict[str, Any]) -> None:
+        d["questions"][0]["input_kind"] = "bogus"
+
+    def duplicate_review(d: dict[str, Any]) -> None:
+        d["review"].append(dict(d["review"][0]))
+
+    def naive_time(d: dict[str, Any]) -> None:
+        d["sessions"][0]["started_at"] = (
+            "2026-11-20T10:00:00"  # no timezone: fine, assumed UTC
+        )
+
+    def profile(d: dict[str, Any]) -> None:
+        d["profile"] = {
+            "level": "god",
+            "weak_points": [],
+            "preferences": {},
+        }
+
+    for change in (score, lyric, mode, kind, duplicate_review, profile):
+        response = client.post("/api/backup/import", json=broken(change))
+        assert response.status_code == 422, change.__name__
+        assert counts(client) == before, change.__name__
+    # a naive timestamp is accepted and read as UTC
+    assert client.post("/api/backup/import", json=broken(naive_time)).status_code == 200
+    assert counts(client) == before
