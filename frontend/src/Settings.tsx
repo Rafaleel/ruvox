@@ -4,6 +4,8 @@ import { getSettings, putSettings, testLlm } from "./api/client";
 import { Button } from "./components/Button";
 import { Card } from "./components/Card";
 import { ErrorMessage } from "./components/ErrorMessage";
+import { PhoneAccess } from "./PhoneAccess";
+import { YourData } from "./YourData";
 
 const inputClass =
   "mt-1 min-h-11 w-full rounded-lg border border-line bg-paper px-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50";
@@ -158,6 +160,9 @@ export function Settings() {
           )}
         </div>
       </Card>
+
+      <PhoneAccess />
+      <YourData />
     </>
   );
 }
