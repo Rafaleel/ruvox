@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Ruvox",
+  "version": "0.1.0",
+  "identifier": "dev.ruvox.desktop",
+  "build": {
+    "beforeDevCommand": { "script": "make build-frontend prepare-dev-sidecar", "wait": true },
+    "frontendDist": "splash"
+  },
+  "app": { "windows": [] },
+  "bundle": { "active": true, "externalBin": ["binaries/ruvox-backend"] }
+}
