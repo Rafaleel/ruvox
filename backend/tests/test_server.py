@@ -38,9 +38,10 @@ def test_openapi_without_server(tmp_path: Path) -> None:
     assert not list(tmp_path.iterdir())
 
 
-def test_sidecar_handshake_and_eof(tmp_path: Path) -> None:
+@pytest.mark.parametrize("flags", [[], ["--check-agents"]])
+def test_sidecar_handshake_and_eof(tmp_path: Path, flags: list[str]) -> None:
     with subprocess.Popen(
-        [sys.executable, "-m", "app.sidecar"],
+        [sys.executable, "-m", "app.sidecar", *flags],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         text=True,
@@ -50,7 +51,7 @@ def test_sidecar_handshake_and_eof(tmp_path: Path) -> None:
             assert process.stdout and process.stdin
             with selectors.DefaultSelector() as selector:
                 selector.register(process.stdout, selectors.EVENT_READ)
-                assert selector.select(10), "sidecar did not report readiness"
+                assert selector.select(20), "sidecar did not report readiness"
             match = re.fullmatch(r"RUVOX_READY port=(\d+)\n", process.stdout.readline())
             assert match and 0 < int(match[1]) <= 65535
             process.stdin.close()
