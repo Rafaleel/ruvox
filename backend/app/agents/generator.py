@@ -30,6 +30,19 @@ class GeneratedQuestions(BaseModel):
     questions: list[GeneratedQuestion]
 
 
+def _leaks_answer(question: GeneratedQuestion, prompt: str) -> bool:
+    # Pronunciations like "a" or "o" are ordinary Portuguese words, so only the other
+    # two types can be checked: a meaning as a whole word, or the Cyrillic answer letter.
+    if question.type == "word_to_meaning":
+        return (
+            re.search(rf"\b{re.escape(question.answer)}\b", prompt, re.IGNORECASE)
+            is not None
+        )
+    if question.type == "sound_to_letter":
+        return question.answer in prompt
+    return False
+
+
 class AgentQuestionGenerator:
     """Writes the questions for slots the seed generator defines.
 
@@ -104,7 +117,7 @@ class AgentQuestionGenerator:
             ):
                 return None
             prompt = generated.prompt.strip()
-            if not prompt or prompt in prompts or generated.answer in prompt:
+            if not prompt or prompt in prompts or _leaks_answer(generated, prompt):
                 return None
             if not generated.explanation.strip():
                 return None

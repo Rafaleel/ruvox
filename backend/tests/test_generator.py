@@ -70,7 +70,11 @@ def tamper(result: GeneratedQuestions, how: str) -> GeneratedQuestions:
     elif how == "not_in_options":
         first.options = [o for o in first.options if o != first.answer] + ["x"]
     elif how == "leak":
-        first.prompt = f"{first.prompt} {first.answer}"
+        leaking = q[
+            1
+        ].model_copy()  # the sound_to_letter question: its answer is a letter
+        leaking.prompt = f"{leaking.prompt} {leaking.answer}"
+        return GeneratedQuestions(questions=[first, leaking, *q[2:]])
     elif how == "duplicate_prompt":
         q[1] = q[1].model_copy(update={"prompt": first.prompt})
     elif how == "duplicate_option":
@@ -139,3 +143,15 @@ def test_empty_plan_makes_no_call(db: Session) -> None:
     llm = FakeLLM()
     assert AgentQuestionGenerator(llm, seed_gen(db)).generate([], 5) == []
     assert llm.calls == []
+
+
+def test_short_pronunciations_inside_ordinary_words_are_not_leaks(db: Session) -> None:
+    plan = plan_of(db, "О")
+    slots = [s for s in seed_gen(db).generate(plan, 6) if s.type == "letter_to_sound"]
+    result = written(slots)
+    result.questions[
+        0
+    ].prompt = "Como se lê «О»?"  # the answer "o" is a letter of "Como"
+    generator = AgentQuestionGenerator(FakeLLM(result), seed_gen(db))
+    assert generator.generate(plan, 1, mode=1)[0].prompt == "Como se lê «О»?"
+    assert generator.source == "ai"

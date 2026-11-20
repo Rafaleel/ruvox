@@ -6,6 +6,7 @@ from sqlmodel import Session, col, select
 
 from app.agents.corrector import review_typed_answer
 from app.agents.llm import StructuredLLM, get_llm
+from app.agents.team import SessionTeam
 from app.db import get_session
 from app.models import Attempt, Item, Question, ReviewState, StudySession, now_utc
 from app.models.schemas import (
@@ -18,8 +19,9 @@ from app.models.schemas import (
     SessionOut,
 )
 from app.services.answer_checker import answers_match
-from app.services.questions import QuestionDraft, SeedQuestionGenerator
-from app.services.selection import SeedContentPlanner, as_utc
+from app.services.profile import update_profile
+from app.services.questions import QuestionDraft
+from app.services.selection import as_utc
 from app.services.srs import apply_to_review_state, can_requeue, mapped_grade
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
@@ -57,10 +59,10 @@ def open_session(db: Session, session_id: int) -> StudySession:
 
 
 @router.post("", response_model=SessionOut)
-def create_session(body: SessionCreate, db: Db) -> SessionOut:
+def create_session(body: SessionCreate, db: Db, llm: Llm) -> SessionOut:
     mode = None if body.mode == "mixed" else body.mode
-    plan = SeedContentPlanner(db).select(USER_ID, body.size)
-    drafts = SeedQuestionGenerator(db, random.Random()).generate(plan, body.size, mode)
+    prepared = SessionTeam(db, llm).prepare(USER_ID, body.size, mode)
+    drafts = prepared.drafts
     if not drafts:
         raise HTTPException(409, "Ainda não há nada para treinar neste modo.")
     study = StudySession(user_id=USER_ID, mode=str(body.mode))
@@ -71,7 +73,7 @@ def create_session(body: SessionCreate, db: Db) -> SessionOut:
     db.commit()
     return SessionOut(
         session_id=study.id,
-        source="offline",
+        source=prepared.source,
         questions=[question_out(q) for q in questions],
     )
 
@@ -171,6 +173,8 @@ def finish(session_id: int, db: Db) -> FinishOut:
     if study.ended_at is None:
         study.ended_at = now_utc()
         db.add(study)
+        db.flush()
+        update_profile(db, USER_ID)
         db.commit()
     attempts = db.exec(
         select(Attempt, Question)
