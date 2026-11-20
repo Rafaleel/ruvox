@@ -34,6 +34,13 @@ export class ApiError extends Error {
   }
 }
 
+let onUnauthorized: (() => void) | undefined;
+
+/** Called on any 401: this browser is not paired (or was unpaired). */
+export const setUnauthorizedHandler = (handler?: () => void) => {
+  onUnauthorized = handler;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
@@ -43,6 +50,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError("Não foi possível falar com o serviço local.", 0);
   }
   if (!response.ok) {
+    if (response.status === 401) onUnauthorized?.();
     const body = await response.json().catch(() => null);
     const detail = typeof body?.detail === "string" ? body.detail : null;
     throw new ApiError(
@@ -133,3 +141,12 @@ export const importBackup = (data: unknown) =>
   request<Record<string, number>>("/api/backup/import", post(data));
 
 export const resetData = () => request<void>("/api/data/reset", post());
+
+export type LanStatus = Schemas["LanStatus"];
+
+export const getLanStatus = (signal?: AbortSignal) =>
+  request<LanStatus>("/api/lan/status", { signal });
+
+/** 204 sets the pairing cookie; 403 is a wrong code, 429 too many attempts. */
+export const pairLan = (code: string) =>
+  request<void>("/api/lan/pair", post({ code }));
