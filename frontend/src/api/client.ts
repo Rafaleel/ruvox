@@ -34,6 +34,13 @@ export class ApiError extends Error {
   }
 }
 
+let onUnauthorized: (() => void) | undefined;
+
+/** Called on any 401: this browser is not paired (or was unpaired). */
+export const setUnauthorizedHandler = (handler?: () => void) => {
+  onUnauthorized = handler;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
@@ -43,6 +50,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError("Não foi possível falar com o serviço local.", 0);
   }
   if (!response.ok) {
+    if (response.status === 401) onUnauthorized?.();
     const body = await response.json().catch(() => null);
     const detail = typeof body?.detail === "string" ? body.detail : null;
     throw new ApiError(
@@ -109,3 +117,36 @@ export const confirmSong = (id: number, entries: ConfirmEntry[]) =>
 
 export const getStats = (signal?: AbortSignal) =>
   request<Stats>("/api/stats", { signal });
+
+export type Lan = Schemas["LanOut"];
+
+/** 403 means this page was opened from a phone: only the desktop manages LAN. */
+export const getLan = (signal?: AbortSignal) =>
+  request<Lan>("/api/lan", { signal });
+
+export const setLan = (enabled: boolean) =>
+  request<Lan>("/api/lan", send("PUT", { enabled }));
+
+export const renewLanCode = () =>
+  request<{ code: string | null }>("/api/lan/code", post());
+
+export const unpairAll = () => request<void>("/api/lan/unpair", post());
+
+/** The whole backup, as parsed JSON. */
+export const exportBackup = () =>
+  request<unknown>("/api/backup/export", post());
+
+/** Row counts per table; a 422 carries the pt-BR reason in the error message. */
+export const importBackup = (data: unknown) =>
+  request<Record<string, number>>("/api/backup/import", post(data));
+
+export const resetData = () => request<void>("/api/data/reset", post());
+
+export type LanStatus = Schemas["LanStatus"];
+
+export const getLanStatus = (signal?: AbortSignal) =>
+  request<LanStatus>("/api/lan/status", { signal });
+
+/** 204 sets the pairing cookie; 403 is a wrong code, 429 too many attempts. */
+export const pairLan = (code: string) =>
+  request<void>("/api/lan/pair", post({ code }));
