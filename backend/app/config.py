@@ -16,6 +16,11 @@ def data_dir() -> Path:
 class Settings(BaseModel):
     api_key: SecretStr | None = None
     model: str = "claude-sonnet-5-5"
+    lan_enabled: bool = False  # serve the phone on the local network (Phase 4)
+    lan_port: int = 8787  # stable, so the phone can bookmark the address
+    lan_secret: str | None = (
+        None  # signs the pairing cookie; rotating it unpairs everyone
+    )
 
 
 def read_settings() -> Settings:
@@ -46,7 +51,16 @@ def write_settings(settings: Settings) -> None:
     try:
         with os.fdopen(fd, "w") as stream:
             key = settings.api_key.get_secret_value() if settings.api_key else None
-            json.dump({"model": settings.model, "api_key": key}, stream)
+            json.dump(
+                {
+                    "model": settings.model,
+                    "api_key": key,
+                    "lan_enabled": settings.lan_enabled,
+                    "lan_port": settings.lan_port,
+                    "lan_secret": settings.lan_secret,
+                },
+                stream,
+            )
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(temporary, directory / "config.json")

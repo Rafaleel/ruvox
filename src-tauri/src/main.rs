@@ -70,6 +70,51 @@ fn start_backend(app: &AppHandle) -> Result<mpsc::Receiver<u16>, Box<dyn std::er
     Ok(rx)
 }
 
+/// The backend exits with this code when a setting (phone access) needs a restart.
+const RESTART_EXIT_CODE: i32 = 75;
+
+fn wait_for_port(app: &AppHandle) -> Result<u16, Box<dyn std::error::Error>> {
+    let rx = start_backend(app)?;
+    Ok(rx.recv_timeout(Duration::from_secs(20))?)
+}
+
+/// Respawns the backend when it asks for a restart and points the window at the new port.
+fn watch_backend(app: AppHandle) {
+    thread::spawn(move || loop {
+        thread::sleep(Duration::from_millis(300));
+        let status = {
+            let state = app.state::<Backend>();
+            let mut guard = state.0.lock().unwrap();
+            let Some(child) = guard.as_mut() else {
+                return; // stopped on purpose (the app is closing)
+            };
+            match child.try_wait() {
+                Ok(Some(status)) => {
+                    guard.take();
+                    status
+                }
+                _ => continue,
+            }
+        };
+        if status.code() != Some(RESTART_EXIT_CODE) {
+            return;
+        }
+        match wait_for_port(&app) {
+            Ok(port) => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window
+                        .eval(format!("window.location.replace('http://127.0.0.1:{port}/')"));
+                }
+            }
+            Err(error) => {
+                eprintln!("Could not restart the backend: {error}");
+                show_error(&app);
+                return;
+            }
+        }
+    });
+}
+
 fn show_error(app: &AppHandle) {
     app.state::<Backend>().stop();
     if let Some(window) = app.get_webview_window("startup") {
@@ -110,6 +155,7 @@ fn main() {
                                     if let Some(splash) = handle.get_webview_window("startup") {
                                         let _ = splash.close();
                                     }
+                                    watch_backend(handle.clone());
                                     return;
                                 }
                                 Err(error) => eprintln!("Could not open Ruvox: {error}"),
