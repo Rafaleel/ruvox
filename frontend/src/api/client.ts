@@ -10,6 +10,9 @@ export type Session = Schemas["SessionOut"];
 export type SessionCreate = Schemas["SessionCreate"];
 export type AnswerResult = Schemas["AnswerOut"];
 export type FinishResult = Schemas["FinishOut"];
+export type Settings = Schemas["SettingsOut"];
+export type SettingsUpdate = Schemas["SettingsIn"];
+export type LlmTestResult = Schemas["LLMTestOut"];
 
 /** `status` is 0 when the request never reached the server. */
 export class ApiError extends Error {
@@ -40,11 +43,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json();
 }
 
-const post = (body?: unknown): RequestInit => ({
-  method: "POST",
+const send = (method: string, body?: unknown): RequestInit => ({
+  method,
   headers: { "Content-Type": "application/json" },
   body: body === undefined ? undefined : JSON.stringify(body),
 });
+const post = (body?: unknown) => send("POST", body);
 
 export const health = (signal?: AbortSignal) =>
   request<Health>("/api/health", { signal });
@@ -65,3 +69,12 @@ export const sendAnswer = (
 
 export const finishSession = (sessionId: number) =>
   request<FinishResult>(`/api/sessions/${sessionId}/finish`, post());
+
+export const getSettings = (signal?: AbortSignal) =>
+  request<Settings>("/api/settings", { signal });
+
+export const putSettings = (body: SettingsUpdate) =>
+  request<Settings>("/api/settings", send("PUT", body));
+
+export const testLlm = () =>
+  request<LlmTestResult>("/api/settings/test-llm", post());
