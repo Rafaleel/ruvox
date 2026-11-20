@@ -15,6 +15,8 @@ from app.config import read_settings, write_settings
 from app.db import ROOT, database_engine, run_migrations, seed
 from app.lan import COOKIE, PairingState, host_allowed, new_secret
 
+mimetypes.add_type("application/manifest+json", ".webmanifest")  # the PWA manifest
+
 
 class Frontend(StaticFiles):
     async def get_response(self, path: str, scope: Scope) -> Response:
