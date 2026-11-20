@@ -88,3 +88,26 @@ class ReviewState(SQLModel, table=True):
     ease: float = 2.5
     next_review: datetime = Field(default_factory=now_utc)
     last_grade: int | None = None
+
+
+class LLMCall(SQLModel, table=True):
+    """One model call: what ran, how long it took and what it cost."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    agent: str
+    model: str
+    input_tokens: int = 0
+    output_tokens: int = 0
+    latency_ms: int = 0
+    cost_usd: float = 0.0
+    ok: bool = True
+    error: str = ""
+    created_at: datetime = Field(default_factory=now_utc)
+
+
+class UserProfile(SQLModel, table=True):
+    user_id: int = Field(default=1, foreign_key="user.id", primary_key=True)
+    level: str = "beginner"
+    weak_points: list[int] = Field(default_factory=list, sa_type=JSON)  # item ids
+    preferences: dict[str, str] = Field(default_factory=dict, sa_type=JSON)
+    updated_at: datetime = Field(default_factory=now_utc)

@@ -32,6 +32,8 @@ def test_migrate_and_seed_twice(
         "question",
         "studysession",
         "reviewstate",
+        "llmcall",
+        "userprofile",
     }
     with Session(engine) as session:
         assert session.get(User, 1)
