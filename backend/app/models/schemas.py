@@ -72,3 +72,23 @@ class ProgressOut(BaseModel):
     groups: list[GroupProgress]
     words_unlocked: int
     words_total: int
+
+
+class SettingsOut(BaseModel):
+    """The API key is write-only: only its presence and source are reported."""
+
+    has_key: bool
+    key_from_env: bool
+    model: str
+
+
+class SettingsIn(BaseModel):
+    api_key: str | None = Field(
+        default=None, max_length=300
+    )  # "" clears the stored key
+    model: str | None = Field(default=None, min_length=1, max_length=100)
+
+
+class LLMTestOut(BaseModel):
+    ok: bool
+    message: str
