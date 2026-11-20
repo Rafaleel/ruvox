@@ -15,6 +15,7 @@ UNLOCK_RATIO = 0.8
 class PlannedItem:
     item: Item
     is_new: bool
+    mode: int | None = None  # optional hint from an agent; the generator may honor it
 
 
 class ContentPlanner(Protocol):
