@@ -1,3 +1,4 @@
+import mimetypes
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
