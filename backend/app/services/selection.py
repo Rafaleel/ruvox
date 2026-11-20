@@ -37,17 +37,20 @@ class SeedContentPlanner:
     # shortcut: loads every seed item and review state per call (about a hundred rows);
     # move to SQL queries if the seed grows into the thousands.
     def __init__(
-        self, session: Session, clock: Callable[[], datetime] = now_utc
+        self,
+        session: Session,
+        clock: Callable[[], datetime] = now_utc,
+        song_id: int | None = None,
     ) -> None:
         self.session = session
         self.clock = clock
+        self.song_id = song_id  # when set, practice only this song's items
 
     def select(self, user_id: int, size: int) -> list[PlannedItem]:
-        items = self.session.exec(
-            select(Item)
-            .where(Item.user_id == user_id, Item.source == "seed")
-            .order_by(col(Item.id))
-        ).all()
+        query = select(Item).where(Item.user_id == user_id).order_by(col(Item.id))
+        if self.song_id is not None:
+            query = query.where(Item.song_id == self.song_id)
+        items = self.session.exec(query).all()
         states = {
             state.item_id: state
             for state in self.session.exec(
@@ -65,7 +68,17 @@ class SeedContentPlanner:
             ),
             key=lambda pair: pair[0],
         )
-        picked = [PlannedItem(item, False) for _, item in due[:size]]
+        # Song items are all due the moment they are saved; in a general session they
+        # may take at most half the slots so the alphabet and seed words keep moving.
+        song_cap = size if self.song_id is not None else size // 2
+        picked: list[PlannedItem] = []
+        song_picked = 0
+        for _, item in due:
+            is_song = item.source == "song"
+            if len(picked) >= size or (is_song and song_picked >= song_cap):
+                continue
+            song_picked += is_song
+            picked.append(PlannedItem(item, False))
 
         unlocked = unlocked_items(items, states)
         fresh = [
@@ -82,7 +95,9 @@ class SeedContentPlanner:
                 (
                     (as_utc(state.next_review), item)
                     for item in items
-                    if (state := state_of(states, item)) and item.id not in chosen
+                    if (state := state_of(states, item))
+                    and item.id not in chosen
+                    and (self.song_id is not None or item.source != "song")
                 ),
                 key=lambda pair: pair[0],
             )
@@ -114,7 +129,8 @@ def unlocked_items(items: Sequence[Item], states: dict[int, ReviewState]) -> lis
     return [
         item
         for item in items
-        if (item.kind == "letter" and item.group in open_groups)
+        if item.source == "song"
+        or (item.kind == "letter" and item.group in open_groups)
         or (
             item.kind == "word"
             and all(char in known for char in item.text.upper() if char.isalpha())

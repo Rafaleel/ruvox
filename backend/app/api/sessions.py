@@ -8,7 +8,15 @@ from app.agents.corrector import review_typed_answer
 from app.agents.llm import StructuredLLM, get_llm
 from app.agents.team import SessionTeam
 from app.db import get_session
-from app.models import Attempt, Item, Question, ReviewState, StudySession, now_utc
+from app.models import (
+    Attempt,
+    Item,
+    Question,
+    ReviewState,
+    Song,
+    StudySession,
+    now_utc,
+)
 from app.models.schemas import (
     AnswerIn,
     AnswerOut,
@@ -61,7 +69,11 @@ def open_session(db: Session, session_id: int) -> StudySession:
 @router.post("", response_model=SessionOut)
 def create_session(body: SessionCreate, db: Db, llm: Llm) -> SessionOut:
     mode = None if body.mode == "mixed" else body.mode
-    prepared = SessionTeam(db, llm).prepare(USER_ID, body.size, mode)
+    if body.song_id is not None:
+        song = db.get(Song, body.song_id)
+        if song is None or song.user_id != USER_ID:
+            raise HTTPException(404, "Música não encontrada.")
+    prepared = SessionTeam(db, llm).prepare(USER_ID, body.size, mode, body.song_id)
     drafts = prepared.drafts
     if not drafts:
         raise HTTPException(409, "Ainda não há nada para treinar neste modo.")

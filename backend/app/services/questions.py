@@ -46,14 +46,12 @@ class SeedQuestionGenerator:
 
     def __init__(self, session: Session, rng: random.Random | None = None) -> None:
         self.rng = rng or random.Random()
-        self.pool = session.exec(
-            select(Item).where(Item.source == "seed").order_by(col(Item.id))
-        ).all()
+        self.pool = session.exec(select(Item).order_by(col(Item.id))).all()
 
     def generate(
         self, plan: Sequence[PlannedItem], size: int, mode: int | None = None
     ) -> list[QuestionDraft]:
-        modes_for = {"letter": (1, 2), "word": (3,)}
+        modes_for = {"letter": (1, 2), "word": (3,), "expression": (3,)}
         questions: list[QuestionDraft] = []
         seen: set[str] = set()
         for round_ in range(2):  # a second round adds the other letter mode

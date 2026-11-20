@@ -99,7 +99,9 @@ def delete_song(song_id: int, db: Db) -> Response:
 
 def known_items(db: Session) -> dict[str, int]:
     """Normalized text of everything the learner already studies -> item id."""
-    rows = db.exec(select(Item.text, Item.id).where(Item.user_id == USER_ID)).all()
+    rows = db.exec(
+        select(Item.text, Item.id).where(Item.user_id == USER_ID, Item.kind != "letter")
+    ).all()  # letters are not vocabulary: the word "и" is not the letter И
     return {normalize(text): item_id for text, item_id in rows if item_id is not None}
 
 
