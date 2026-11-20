@@ -97,3 +97,22 @@ it("goes back to the pairing page when any request answers 401", async () => {
   expect(await screen.findByRole("button", { name: "Parear" })).toBeTruthy();
   expect(statusCalls).toBe(2);
 });
+
+it("has a skip link and a title per page", async () => {
+  mockFetch({
+    "/api/lan/status": desktop,
+    "/api/health": { status: "ok" },
+    "/api/progress": progress,
+    "/api/items?kind=letter": [],
+  });
+  renderWithProviders(<App />);
+  const skip = await screen.findByRole("link", {
+    name: "Pular para o conteúdo",
+  });
+  expect(skip.getAttribute("href")).toBe("#conteudo");
+  expect(document.getElementById("conteudo")).toBeTruthy();
+  expect(document.title).toBe("Ruvox");
+  fireEvent.click(screen.getByRole("link", { name: "Jogar" }));
+  await screen.findByRole("heading", { level: 1 });
+  expect(document.title).toBe("Jogar · Ruvox");
+});

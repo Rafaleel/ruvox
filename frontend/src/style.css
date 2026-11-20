@@ -9,7 +9,7 @@
   --muted: #515d50;
   --accent: #ba3c28;
   --on-accent: #ffffff;
-  --line: #c4c9bb;
+  --line: #7a8576; /* borders of controls need 3:1 against the paper (WCAG 1.4.11) */
   --success: #32663e;
   --danger: #a32a1a;
   font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
@@ -24,7 +24,7 @@
     --muted: #bdc9b8;
     --accent: #ff9074;
     --on-accent: #18221d;
-    --line: #46544a;
+    --line: #788b7c;
     --success: #9ad39c;
     --danger: #ff9a8a;
   }
