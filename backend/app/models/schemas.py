@@ -143,3 +143,25 @@ class ConfirmOut(BaseModel):
     created: int
     skipped: int  # already studied (same text)
     rejected: int  # not valid Cyrillic or missing pronunciation/meaning
+
+
+class MasteryOut(BaseModel):
+    new: int
+    learning: int
+    familiar: int
+    mastered: int
+
+
+class DayStats(BaseModel):
+    date: str
+    answered: int
+    correct: int
+    sessions: int
+
+
+class StatsOut(BaseModel):
+    mastery: MasteryOut
+    days: list[DayStats]
+    streak: int
+    best_streak: int
+    today_done: bool
