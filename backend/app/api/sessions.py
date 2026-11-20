@@ -1,3 +1,4 @@
+import json
 import random
 from typing import Annotated
 
@@ -22,6 +23,7 @@ from app.models.schemas import (
     AnswerOut,
     FinishOut,
     ItemOut,
+    Pair,
     QuestionOut,
     SessionCreate,
     SessionOut,
@@ -30,7 +32,13 @@ from app.services.answer_checker import answers_match
 from app.services.profile import update_profile
 from app.services.questions import QuestionDraft
 from app.services.selection import as_utc
-from app.services.srs import apply_to_review_state, can_requeue, mapped_grade
+from app.services.srs import (
+    apply_to_review_state,
+    can_requeue,
+    flashcard_grade,
+    mapped_grade,
+    pairs_grade,
+)
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 USER_ID = 1  # D14: single user per install
@@ -45,11 +53,28 @@ def llm_dependency(request: Request) -> StructuredLLM | None:
 Llm = Annotated[StructuredLLM | None, Depends(llm_dependency)]
 
 
-def question_out(question: Question) -> QuestionOut:
+def question_out(db: Session, question: Question) -> QuestionOut:
     assert question.id is not None
-    return QuestionOut.model_validate(
-        {**question.model_dump(), "id": question.id, "options": question.options}
-    )
+    data = {**question.model_dump(), "id": question.id, "options": question.options}
+    if question.input_kind == "flip":
+        data["reveal"] = question.explanation
+    elif question.input_kind == "pairs":
+        items = {
+            item.id: item
+            for item in db.exec(select(Item).where(col(Item.id).in_(question.item_ids)))
+        }
+        data["pairs"] = [
+            Pair(
+                item_id=item_id,
+                left=items[item_id].text,
+                right=items[item_id].pronunciation
+                if items[item_id].kind == "letter"
+                else items[item_id].meaning,
+            )
+            for item_id in question.item_ids
+            if item_id in items
+        ]
+    return QuestionOut.model_validate(data)
 
 
 def add_question(db: Session, session_id: int, draft: QuestionDraft) -> Question:
@@ -86,7 +111,51 @@ def create_session(body: SessionCreate, db: Db, llm: Llm) -> SessionOut:
     return SessionOut(
         session_id=study.id,
         source=prepared.source,
-        questions=[question_out(q) for q in questions],
+        questions=[question_out(db, q) for q in questions],
+    )
+
+
+def evaluate(
+    question: Question, body: AnswerIn, llm: StructuredLLM | None
+) -> tuple[bool, dict[int, int], str]:
+    """Correctness, a grade per item and the explanation to show."""
+    ids = question.item_ids
+    if question.input_kind == "flip":  # flashcards are self-graded
+        if body.answer not in ("knew", "missed"):
+            raise HTTPException(422, "Resposta inválida.")
+        knew = body.answer == "knew"
+        return (
+            knew,
+            dict.fromkeys(ids, flashcard_grade(knew=knew)),
+            question.explanation,
+        )
+    if question.input_kind == "pairs":  # the client reports mistakes per item
+        try:
+            reported = {
+                int(k): max(0, int(v)) for k, v in json.loads(body.answer).items()
+            }
+        except (ValueError, TypeError, AttributeError) as exc:
+            raise HTTPException(422, "Resposta inválida.") from exc
+        grades = {i: pairs_grade(mistakes=reported.get(i, 0)) for i in ids}
+        return sum(reported.get(i, 0) for i in ids) == 0, grades, question.explanation
+    typed = question.input_kind == "text"
+    if answers_match(question.answer, body.answer, typed=typed):
+        grade = 5 if typed else mapped_grade(correct=True, time_ms=body.time_ms)
+        return True, dict.fromkeys(ids, grade), question.explanation
+    if typed:
+        # Not an exact match: the corrector explains near misses (offline: just wrong).
+        verdict = review_typed_answer(
+            llm,
+            question=question.prompt,
+            expected=question.answer,
+            given=body.answer,
+            explanation=question.explanation,
+        )
+        return verdict.correct, dict.fromkeys(ids, verdict.grade), verdict.explanation
+    return (
+        False,
+        dict.fromkeys(ids, mapped_grade(correct=False, time_ms=body.time_ms)),
+        question.explanation,
     )
 
 
@@ -101,35 +170,14 @@ def answer(session_id: int, body: AnswerIn, db: Db, llm: Llm) -> AnswerOut:
     if db.exec(select(Attempt).where(Attempt.question_id == question.id)).first():
         raise HTTPException(409, "Esta pergunta já foi respondida.")
 
-    typed = question.input_kind == "text"
-    explanation = question.explanation
-    if answers_match(question.answer, body.answer, typed=typed):
-        correct, grade = (
-            True,
-            (5 if typed else mapped_grade(correct=True, time_ms=body.time_ms)),
-        )
-    elif typed:
-        # Not an exact match: the corrector explains near misses (offline: just wrong).
-        verdict = review_typed_answer(
-            llm,
-            question=question.prompt,
-            expected=question.answer,
-            given=body.answer,
-            explanation=question.explanation,
-        )
-        correct, grade, explanation = (
-            verdict.correct,
-            verdict.grade,
-            verdict.explanation,
-        )
-    else:
-        correct, grade = False, mapped_grade(correct=False, time_ms=body.time_ms)
+    correct, item_grades, explanation = evaluate(question, body, llm)
+    grade = min(item_grades.values(), default=1)
     now = now_utc()
-    for item_id in question.item_ids:
+    for item_id, item_grade in item_grades.items():
         state = db.get(ReviewState, (USER_ID, item_id)) or ReviewState(
             user_id=USER_ID, item_id=item_id
         )
-        apply_to_review_state(state, grade, now)
+        apply_to_review_state(state, item_grade, now)
         db.add(state)
     db.add(
         Attempt(
@@ -155,6 +203,7 @@ def answer(session_id: int, body: AnswerIn, db: Db, llm: Llm) -> AnswerOut:
             options = list(question.options)
             random.shuffle(options)
             requeued = question_out(
+                db,
                 add_question(
                     db,
                     session_id,
@@ -167,7 +216,7 @@ def answer(session_id: int, body: AnswerIn, db: Db, llm: Llm) -> AnswerOut:
                         item_ids=question.item_ids,
                         input_kind=question.input_kind,  # type: ignore[arg-type]
                     ),
-                )
+                ),
             )
     db.commit()
     return AnswerOut(
