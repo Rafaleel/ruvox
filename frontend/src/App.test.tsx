@@ -23,6 +23,7 @@ it("renders the nav links and switches routes", async () => {
   expect(names).toEqual([
     ["Início", "/"],
     ["Jogar", "/play"],
+    ["Músicas", "/songs"],
     ["Alfabeto", "/alphabet"],
     ["Configurações", "/settings"],
   ]);
