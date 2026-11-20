@@ -3,7 +3,7 @@ import re
 from collections.abc import Sequence
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from app.agents.llm import LLMUnavailable, StructuredLLM
 from app.services.questions import (
@@ -14,15 +14,18 @@ from app.services.questions import (
 )
 from app.services.selection import PlannedItem
 
+# Structured outputs reject JSON-schema length limits, so the limits live in code.
+MAX_PROMPT_CHARS = 300
+MAX_EXPLANATION_CHARS = 500
 CYRILLIC = re.compile(r"[Ѐ-ӿ]")
 
 
 class GeneratedQuestion(BaseModel):
     type: QuestionType
-    prompt: str = Field(max_length=300)
+    prompt: str
     options: list[str]
     answer: str
-    explanation: str = Field(max_length=500)
+    explanation: str
     item_ids: list[int]
 
 
@@ -117,7 +120,12 @@ class AgentQuestionGenerator:
             ):
                 return None
             prompt = generated.prompt.strip()
-            if not prompt or prompt in prompts or _leaks_answer(generated, prompt):
+            if (
+                not prompt
+                or len(prompt) > MAX_PROMPT_CHARS
+                or prompt in prompts
+                or _leaks_answer(generated, prompt)
+            ):
                 return None
             if not generated.explanation.strip():
                 return None
@@ -133,7 +141,7 @@ class AgentQuestionGenerator:
                     prompt=prompt,
                     options=options,
                     answer=generated.answer,
-                    explanation=generated.explanation.strip(),
+                    explanation=generated.explanation.strip()[:MAX_EXPLANATION_CHARS],
                     item_ids=generated.item_ids,
                 )
             )

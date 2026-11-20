@@ -2,7 +2,7 @@ import json
 from collections.abc import Mapping
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlmodel import Session
 
 from app.agents.llm import LLMUnavailable, StructuredLLM
@@ -13,13 +13,13 @@ from app.services.selection import ContentPlanner, PlannedItem
 class PlanEntry(BaseModel):
     item_id: int
     mode: Literal[1, 2, 3]
-    reason: str = Field(max_length=300)
+    reason: str
 
 
 class SessionPlan(BaseModel):
     entries: list[PlanEntry]
     difficulty: Literal["easy", "medium", "hard"]
-    notes: str = Field(max_length=300)
+    notes: str
 
 
 class AgentContentPlanner:

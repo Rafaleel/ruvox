@@ -76,11 +76,12 @@ def get_lan(request: Request, _: Desktop) -> LanOut:
     pairing = pairing_of(request)
     ip = lan_ip()
     running = request.app.state.lan_enabled
+    port = getattr(request.app.state, "port", None) or saved.lan_port
     return LanOut(
         enabled=saved.lan_enabled,
         running=running,
-        port=saved.lan_port,
-        urls=[f"http://{ip}:{saved.lan_port}/"] if running and ip else [],
+        port=port,
+        urls=[f"http://{ip}:{port}/"] if running and ip else [],
         code=pairing.code if pairing else None,
     )
 
