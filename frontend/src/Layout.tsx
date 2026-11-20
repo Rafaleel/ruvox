@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from "react-router";
+import { useEffect } from "react";
+import { NavLink, Outlet, useLocation } from "react-router";
 
 const links = [
   { to: "/", label: "Início", end: true },
@@ -8,9 +9,30 @@ const links = [
   { to: "/settings", label: "Configurações", end: false },
 ];
 
+const titles: Record<string, string> = {
+  "/play": "Jogar",
+  "/songs": "Músicas",
+  "/progress": "Progresso",
+  "/settings": "Configurações",
+  "/alphabet": "Alfabeto",
+};
+
 export function Layout() {
+  const { pathname } = useLocation();
+  // Screen readers announce the page title on navigation in a single-page app.
+  useEffect(() => {
+    const title = titles[pathname];
+    document.title = title ? `${title} · Ruvox` : "Ruvox";
+  }, [pathname]);
+
   return (
     <div className="min-h-dvh md:flex">
+      <a
+        href="#conteudo"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-20 focus:rounded-lg focus:bg-accent focus:px-4 focus:py-2 focus:font-semibold focus:text-on-accent"
+      >
+        Pular para o conteúdo
+      </a>
       <nav
         aria-label="Navegação principal"
         className="fixed inset-x-0 bottom-0 z-10 flex border-t border-line bg-paper md:sticky md:inset-x-auto md:top-0 md:bottom-auto md:h-dvh md:w-56 md:shrink-0 md:flex-col md:gap-1 md:border-t-0 md:border-r md:p-4"
@@ -33,7 +55,11 @@ export function Layout() {
           </NavLink>
         ))}
       </nav>
-      <main className="mx-auto w-full min-w-0 max-w-3xl px-5 pt-8 pb-28 md:flex-1 md:px-10 md:pb-10">
+      <main
+        id="conteudo"
+        tabIndex={-1}
+        className="mx-auto w-full min-w-0 max-w-3xl px-5 pt-8 pb-28 outline-none md:flex-1 md:px-10 md:pb-10"
+      >
         <Outlet />
       </main>
     </div>
