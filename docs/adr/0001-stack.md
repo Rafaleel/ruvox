@@ -14,3 +14,7 @@ Date: 2026-11-20. Status: accepted.
 ## Why
 
 Simplest options that meet the MVP goals and keep the LLM provider and the database replaceable.
+
+## Open point: branch protection
+
+GitHub does not offer branch protection on private repositories on the free plan. Until the owner makes the repo public or upgrades, `main` is protected by convention only (see issue #1). Required status checks can be added after the CI workflow has run green once.
