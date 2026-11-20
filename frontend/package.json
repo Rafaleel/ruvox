@@ -11,7 +11,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "gen:api": "bash -o pipefail -c 'PYTHONPATH=../backend uv run --project ../backend --frozen python -m app.openapi | openapi-typescript -o src/api/schema.d.ts'"
+    "gen:api": "bash scripts/gen-api.sh"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",
