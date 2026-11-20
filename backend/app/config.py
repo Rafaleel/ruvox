@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from pathlib import Path
 from tempfile import mkstemp
@@ -19,9 +20,14 @@ class Settings(BaseModel):
 
 def read_settings() -> Settings:
     path = data_dir() / "config.json"
-    return (
-        Settings.model_validate_json(path.read_bytes()) if path.exists() else Settings()
-    )
+    if not path.exists():
+        return Settings()
+    try:
+        return Settings.model_validate_json(path.read_bytes())
+    except ValueError:
+        # A corrupt file must not take the app down; behave as unconfigured (offline mode).
+        logging.getLogger(__name__).warning("ignoring unreadable %s", path)
+        return Settings()
 
 
 def effective_settings() -> Settings:

@@ -39,16 +39,22 @@ def seed(session: Session) -> None:
     if session.get(User, 1) is None:
         session.add(User(id=1, name="Estudante"))
         session.flush()
-    existing = set(
-        session.exec(
-            select(Item.kind, Item.text).where(Item.source == "seed", Item.user_id == 1)
+    existing = {
+        (item.kind, item.text): item
+        for item in session.exec(
+            select(Item).where(Item.source == "seed", Item.user_id == 1)
         )
-    )
+    }
     for kind, filename in (("letter", "alphabet.json"), ("word", "words.json")):
         entries = json.loads((ROOT / "app/data" / filename).read_text(encoding="utf-8"))
         for entry in entries:
-            if (kind, entry["text"]) not in existing:
-                entry.setdefault("meaning", entry["text"])
+            entry.setdefault("meaning", entry["text"])
+            if item := existing.get((kind, entry["text"])):
+                # Content fixes shipped in a new version must reach existing databases.
+                # shortcut: seed rows removed from the JSON are not deleted; add a data migration if that is needed.
+                for field, value in entry.items():
+                    setattr(item, field, value)
+            else:
                 session.add(Item(kind=kind, source="seed", **entry))
     session.commit()
 

@@ -29,6 +29,11 @@ def main() -> None:
     )
     parser.add_argument("--port", type=int, default=0)
     parser.add_argument(
+        "--no-stdin-watch",
+        action="store_true",
+        help="keep running when stdin closes (background dev servers)",
+    )
+    parser.add_argument(
         "--check-agents",
         action="store_true",
         help="load packaged agent classes before startup",
@@ -58,7 +63,8 @@ def main() -> None:
     )
     server = SidecarServer(config)
     with config.bind_socket() as listener:
-        threading.Thread(target=watch_parent, args=(server,), daemon=True).start()
+        if not args.no_stdin_watch:
+            threading.Thread(target=watch_parent, args=(server,), daemon=True).start()
         server.run(sockets=[listener])
 
 

@@ -38,6 +38,23 @@ def test_openapi_without_server(tmp_path: Path) -> None:
     assert not list(tmp_path.iterdir())
 
 
+def test_sidecar_keeps_running_without_stdin_watch(tmp_path: Path) -> None:
+    with subprocess.Popen(
+        [sys.executable, "-m", "app.sidecar", "--no-stdin-watch"],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        text=True,
+        env={**os.environ, "RUVOX_DATA_DIR": str(tmp_path)},
+    ) as process:
+        try:
+            assert process.stdout
+            assert process.stdout.readline().startswith("RUVOX_READY port=")
+            with pytest.raises(subprocess.TimeoutExpired):
+                process.wait(timeout=1.5)
+        finally:
+            process.terminate()
+
+
 @pytest.mark.parametrize("flags", [[], ["--check-agents"]])
 def test_sidecar_handshake_and_eof(tmp_path: Path, flags: list[str]) -> None:
     with subprocess.Popen(
