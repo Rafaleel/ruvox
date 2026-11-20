@@ -60,7 +60,12 @@ class SeedQuestionGenerator:
                     available = tuple(m for m in available if m == mode)
                 if not available or len(questions) >= size:
                     continue
-                chosen = available[(index + round_) % len(available)]
+                hinted = entry.mode in available and round_ == 0
+                chosen = (
+                    entry.mode
+                    if hinted and entry.mode
+                    else available[(index + round_) % len(available)]
+                )
                 draft = self._build(entry.item, chosen)
                 if draft.prompt not in seen:
                     seen.add(draft.prompt)
