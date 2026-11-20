@@ -12,8 +12,10 @@ from tests.fakes import FakeLLM
 
 def start_typing(client: TestClient, llm: FakeLLM | None) -> tuple[int, int, str]:
     """Returns session id, first question id and the expected Cyrillic text."""
-    client.app.dependency_overrides[llm_dependency] = lambda: llm  # type: ignore[attr-defined]
+    overrides = client.app.dependency_overrides  # type: ignore[attr-defined]
+    overrides[llm_dependency] = lambda: None  # the session itself is built offline
     response = client.post("/api/sessions", json={"mode": 4, "size": 5})
+    overrides[llm_dependency] = lambda: llm
     assert response.status_code == 200, response.text
     body = response.json()
     question = body["questions"][0]
