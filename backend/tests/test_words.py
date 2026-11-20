@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -33,4 +34,28 @@ def test_word_seed_matches_content_and_is_idempotent(
                 and word.text.strip()
             )
             assert set(word.text.upper()) <= letters | set(" ?-")
+    engine.dispose()
+
+
+def test_pronunciations_use_plain_latin_text() -> None:
+    for word in json.loads((ROOT / "app/data/words.json").read_text(encoding="utf-8")):
+        text = word["pronunciation"]
+        assert not re.search(r"[\u0400-\u04ff\u0250-\u02af]", text), text
+
+
+def test_seed_updates_existing_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("RUVOX_DATA_DIR", str(tmp_path))
+    engine = database_engine()
+    run_migrations(engine)
+    with Session(engine) as session:
+        seed(session)
+        item = session.exec(select(Item).where(Item.text == "кофе")).one()
+        item.pronunciation = "stale"
+        session.add(item)
+        session.commit()
+        seed(session)
+        session.refresh(item)
+        assert item.pronunciation == "KÓ-fi"
     engine.dispose()

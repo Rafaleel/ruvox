@@ -13,7 +13,7 @@
   },
   {
     "text": "кофе",
-    "pronunciation": "KÓ-fiê",
+    "pronunciation": "KÓ-fi",
     "meaning": "café",
     "difficulty": 1
   },
@@ -103,7 +103,7 @@
   },
   {
     "text": "университет",
-    "pronunciation": "u-ni-ver-si-TIÉT",
+    "pronunciation": "u-ni-vir-si-TIÉT",
     "meaning": "universidade",
     "difficulty": 3
   },
@@ -145,7 +145,7 @@
   },
   {
     "text": "здравствуйте",
-    "pronunciation": "ZDRÁS-tvuy-tie",
+    "pronunciation": "ZDRÁST-vui-tie",
     "meaning": "olá (formal)",
     "difficulty": 3
   },
@@ -175,7 +175,7 @@
   },
   {
     "text": "ты",
-    "pronunciation": "tɨ (som de ы)",
+    "pronunciation": "ti (i fechado, no fundo da garganta)",
     "meaning": "tu",
     "difficulty": 1
   },
@@ -193,13 +193,13 @@
   },
   {
     "text": "мы",
-    "pronunciation": "mɨ (som de ы)",
+    "pronunciation": "mi (i fechado, no fundo da garganta)",
     "meaning": "nós",
     "difficulty": 1
   },
   {
     "text": "вы",
-    "pronunciation": "vi",
+    "pronunciation": "vi (i fechado, no fundo da garganta)",
     "meaning": "vocês / o senhor",
     "difficulty": 1
   },
