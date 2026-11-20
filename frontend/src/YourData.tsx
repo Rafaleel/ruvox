@@ -22,7 +22,8 @@ function download(data: unknown) {
   document.body.append(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  // WebKit cancels the download if the URL is revoked right away.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export function YourData() {
@@ -79,7 +80,10 @@ export function YourData() {
     startOver();
     if (!file) return;
     try {
-      setPending(JSON.parse(await file.text()));
+      const data: unknown = JSON.parse(await file.text());
+      if (typeof data !== "object" || data === null || Array.isArray(data))
+        throw new Error("not an object");
+      setPending(data);
     } catch {
       setReadError("O arquivo não é um backup válido (JSON).");
     }

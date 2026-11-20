@@ -69,7 +69,11 @@ it("exports the backup as ruvox-backup.json through a temporary link", async () 
   expect(document.querySelector("a[download]")).toBeNull();
   const blob = (createObjectURL.mock.calls[0] as unknown as [Blob])[0];
   expect(JSON.parse(await blob.text())).toEqual({ version: 1 });
-  expect(revokeObjectURL).toHaveBeenCalledWith("blob:fake");
+  expect(revokeObjectURL).not.toHaveBeenCalled();
+  await vi.waitFor(
+    () => expect(revokeObjectURL).toHaveBeenCalledWith("blob:fake"),
+    { timeout: 3000 },
+  );
   click.mockRestore();
 });
 
@@ -130,6 +134,8 @@ it("shows the backend reason when the backup is rejected (422)", async () => {
 it("rejects a file that is not JSON without calling the API", async () => {
   renderWithProviders(<YourData />);
   chooseFile("not json");
+  expect((await screen.findByRole("alert")).textContent).toMatch(/JSON/);
+  chooseFile("[1]");
   expect((await screen.findByRole("alert")).textContent).toMatch(/JSON/);
   expect(called("/api/backup/import")).toBe(0);
 });
