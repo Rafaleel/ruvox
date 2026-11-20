@@ -24,6 +24,7 @@ it("renders the nav links and switches routes", async () => {
     ["Início", "/"],
     ["Jogar", "/play"],
     ["Alfabeto", "/alphabet"],
+    ["Configurações", "/settings"],
   ]);
   expect(await screen.findByText("Serviço local conectado")).toBeTruthy();
 
