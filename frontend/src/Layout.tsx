@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router";
 const links = [
   { to: "/", label: "Início", end: true },
   { to: "/play", label: "Jogar", end: false },
+  { to: "/songs", label: "Músicas", end: false },
   { to: "/alphabet", label: "Alfabeto", end: false },
   { to: "/settings", label: "Configurações", end: false },
 ];
