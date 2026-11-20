@@ -48,7 +48,7 @@ class AgentQuestionGenerator:
     ) -> list[QuestionDraft]:
         slots = self.fallback.generate(plan, size, mode)
         self.source = "offline"
-        if not slots:
+        if not slots or mode == 4:  # typing questions need no generation
             return slots
         items = {p.item.id: p.item for p in plan}
         payload = json.dumps(

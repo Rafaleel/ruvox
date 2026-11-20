@@ -1,9 +1,11 @@
 import random
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, col, select
 
+from app.agents.corrector import review_typed_answer
+from app.agents.llm import StructuredLLM, get_llm
 from app.db import get_session
 from app.models import Attempt, Item, Question, ReviewState, StudySession, now_utc
 from app.models.schemas import (
@@ -24,6 +26,13 @@ router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 USER_ID = 1  # D14: single user per install
 
 Db = Annotated[Session, Depends(get_session)]
+
+
+def llm_dependency(request: Request) -> StructuredLLM | None:
+    return get_llm(request.app.state.engine)
+
+
+Llm = Annotated[StructuredLLM | None, Depends(llm_dependency)]
 
 
 def question_out(question: Question) -> QuestionOut:
@@ -68,7 +77,7 @@ def create_session(body: SessionCreate, db: Db) -> SessionOut:
 
 
 @router.post("/{session_id}/answers", response_model=AnswerOut)
-def answer(session_id: int, body: AnswerIn, db: Db) -> AnswerOut:
+def answer(session_id: int, body: AnswerIn, db: Db, llm: Llm) -> AnswerOut:
     study = open_session(db, session_id)
     if study.ended_at is not None:
         raise HTTPException(409, "Esta sessão já terminou.")
@@ -78,10 +87,29 @@ def answer(session_id: int, body: AnswerIn, db: Db) -> AnswerOut:
     if db.exec(select(Attempt).where(Attempt.question_id == question.id)).first():
         raise HTTPException(409, "Esta pergunta já foi respondida.")
 
-    correct = answers_match(
-        question.answer, body.answer, typed=question.input_kind == "text"
-    )
-    grade = mapped_grade(correct=correct, time_ms=body.time_ms)
+    typed = question.input_kind == "text"
+    explanation = question.explanation
+    if answers_match(question.answer, body.answer, typed=typed):
+        correct, grade = (
+            True,
+            (5 if typed else mapped_grade(correct=True, time_ms=body.time_ms)),
+        )
+    elif typed:
+        # Not an exact match: the corrector explains near misses (offline: just wrong).
+        verdict = review_typed_answer(
+            llm,
+            question=question.prompt,
+            expected=question.answer,
+            given=body.answer,
+            explanation=question.explanation,
+        )
+        correct, grade, explanation = (
+            verdict.correct,
+            verdict.grade,
+            verdict.explanation,
+        )
+    else:
+        correct, grade = False, mapped_grade(correct=False, time_ms=body.time_ms)
     now = now_utc()
     for item_id in question.item_ids:
         state = db.get(ReviewState, (USER_ID, item_id)) or ReviewState(
@@ -123,6 +151,7 @@ def answer(session_id: int, body: AnswerIn, db: Db) -> AnswerOut:
                         answer=question.answer,
                         explanation=question.explanation,
                         item_ids=question.item_ids,
+                        input_kind=question.input_kind,  # type: ignore[arg-type]
                     ),
                 )
             )
@@ -131,7 +160,7 @@ def answer(session_id: int, body: AnswerIn, db: Db) -> AnswerOut:
         correct=correct,
         grade=grade,
         correct_answer=question.answer,
-        explanation=question.explanation,
+        explanation=explanation,
         requeued_question=requeued,
     )
 
