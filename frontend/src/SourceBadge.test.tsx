@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { afterEach, expect, it, vi } from "vitest";
 import { Play } from "./Play";
 
@@ -52,7 +53,9 @@ it.each([
     );
     render(
       <QueryClientProvider client={new QueryClient()}>
-        <Play />
+        <MemoryRouter>
+          <Play />
+        </MemoryRouter>
       </QueryClientProvider>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Começar" }));

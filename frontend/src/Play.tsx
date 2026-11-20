@@ -1,6 +1,12 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { createSession, type Session, type SessionCreate } from "./api/client";
+import { useSearchParams } from "react-router";
+import {
+  createSession,
+  getSong,
+  type Session,
+  type SessionCreate,
+} from "./api/client";
 import { Button } from "./components/Button";
 import { ErrorMessage } from "./components/ErrorMessage";
 import { Quiz } from "./Quiz";
@@ -9,6 +15,9 @@ const SIZES = [5, 10, 15];
 const MODES: { label: string; mode: SessionCreate["mode"] }[] = [
   { label: "Misto", mode: "mixed" },
   { label: "Digitação", mode: 4 },
+  { label: "Cartões", mode: 5 },
+  { label: "Pares", mode: 6 },
+  { label: "Lacuna", mode: 7 },
 ];
 
 function Pill({
@@ -23,7 +32,7 @@ function Pill({
   onChange: () => void;
 }) {
   return (
-    <label className="flex-1">
+    <label className="min-w-24 flex-1">
       <input
         type="radio"
         name={name}
@@ -43,6 +52,21 @@ export function Play() {
   const [session, setSession] = useState<Session | null>(null);
   const [size, setSize] = useState(10);
   const [mode, setMode] = useState<SessionCreate["mode"]>("mixed");
+  const [params, setParams] = useSearchParams();
+  const songParam = Number(params.get("song"));
+  const songId =
+    Number.isInteger(songParam) && songParam > 0 ? songParam : null;
+  const song = useQuery({
+    queryKey: ["song", songId],
+    queryFn: ({ signal }) => getSong(songId!, signal),
+    enabled: songId !== null,
+    retry: false,
+  });
+  const request: SessionCreate = {
+    mode,
+    size,
+    ...(songId !== null && { song_id: songId }),
+  };
   const start = useMutation({
     mutationFn: createSession,
     onSuccess: setSession,
@@ -63,9 +87,23 @@ export function Play() {
       <p className="mt-2 text-muted">
         Uma sessão mistura letras, sons e palavras.
       </p>
+      {songId !== null && (
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-line p-3">
+          <p>
+            Treinando:{" "}
+            <strong lang="ru">
+              {song.data?.title ??
+                (song.isError ? "música não encontrada" : "…")}
+            </strong>
+          </p>
+          <Button variant="secondary" onClick={() => setParams({})}>
+            Limpar
+          </Button>
+        </div>
+      )}
       <fieldset className="mt-6">
         <legend className="mb-2 font-semibold">Tipo de treino</legend>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {MODES.map((m) => (
             <Pill
               key={m.label}
@@ -76,6 +114,11 @@ export function Play() {
             />
           ))}
         </div>
+        {mode === 7 && (
+          <p className="mt-2 text-sm text-muted">
+            Precisa de palavras de músicas salvas.
+          </p>
+        )}
       </fieldset>
       <fieldset className="mt-6">
         <legend className="mb-2 font-semibold">Quantas perguntas?</legend>
@@ -94,7 +137,7 @@ export function Play() {
       <Button
         className="mt-6 w-full"
         disabled={start.isPending}
-        onClick={() => start.mutate({ mode, size })}
+        onClick={() => start.mutate(request)}
       >
         {start.isPending ? "Começando…" : "Começar"}
       </Button>
@@ -102,7 +145,7 @@ export function Play() {
         <div className="mt-4">
           <ErrorMessage
             error={start.error}
-            onRetry={() => start.mutate({ mode, size })}
+            onRetry={() => start.mutate(request)}
           />
         </div>
       )}

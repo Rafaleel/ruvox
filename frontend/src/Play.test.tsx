@@ -6,6 +6,7 @@ import {
   screen,
   within,
 } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Play } from "./Play";
 
@@ -52,7 +53,9 @@ const renderPlay = () =>
         new QueryClient({ defaultOptions: { mutations: { retry: false } } })
       }
     >
-      <Play />
+      <MemoryRouter>
+        <Play />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 
