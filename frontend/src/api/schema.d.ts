@@ -21,10 +21,243 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Session */
+        post: operations["create_session_api_sessions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/{session_id}/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Answer */
+        post: operations["answer_api_sessions__session_id__answers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/{session_id}/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Finish */
+        post: operations["finish_api_sessions__session_id__finish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Items */
+        get: operations["items_api_items_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Progress */
+        get: operations["progress_api_progress_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: never;
+    schemas: {
+        /** AnswerIn */
+        AnswerIn: {
+            /** Question Id */
+            question_id: number;
+            /** Answer */
+            answer: string;
+            /**
+             * Time Ms
+             * @default 0
+             */
+            time_ms: number;
+        };
+        /** AnswerOut */
+        AnswerOut: {
+            /** Correct */
+            correct: boolean;
+            /** Grade */
+            grade: number;
+            /** Correct Answer */
+            correct_answer: string;
+            /** Explanation */
+            explanation: string;
+            requeued_question?: components["schemas"]["QuestionOut"] | null;
+        };
+        /** FinishOut */
+        FinishOut: {
+            /** Score */
+            score: number;
+            /** Answered */
+            answered: number;
+            /** Correct */
+            correct: number;
+            /** Items To Review */
+            items_to_review: components["schemas"]["ItemOut"][];
+            /**
+             * Ended At
+             * Format: date-time
+             */
+            ended_at: string;
+        };
+        /** GroupProgress */
+        GroupProgress: {
+            /** Group */
+            group: number;
+            /** Total */
+            total: number;
+            /** Learned */
+            learned: number;
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ItemOut */
+        ItemOut: {
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Text */
+            text: string;
+            /** Pronunciation */
+            pronunciation: string;
+            /** Meaning */
+            meaning: string;
+            /** Source */
+            source: string;
+            /** Group */
+            group: number | null;
+            /** Difficulty */
+            difficulty: number;
+        };
+        /** ProgressOut */
+        ProgressOut: {
+            /** Due Count */
+            due_count: number;
+            /** Groups */
+            groups: components["schemas"]["GroupProgress"][];
+            /** Words Unlocked */
+            words_unlocked: number;
+            /** Words Total */
+            words_total: number;
+        };
+        /**
+         * QuestionOut
+         * @description What the client sees: never the answer or the explanation.
+         */
+        QuestionOut: {
+            /** Id */
+            id: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "letter_to_sound" | "sound_to_letter" | "word_to_meaning";
+            /** Prompt */
+            prompt: string;
+            /**
+             * Input Kind
+             * @constant
+             */
+            input_kind: "choice";
+            /** Options */
+            options: string[];
+            /** Item Ids */
+            item_ids: number[];
+        };
+        /** SessionCreate */
+        SessionCreate: {
+            /**
+             * Mode
+             * @default mixed
+             * @enum {unknown}
+             */
+            mode: "mixed" | 1 | 2 | 3;
+            /**
+             * Size
+             * @default 10
+             */
+            size: number;
+        };
+        /** SessionOut */
+        SessionOut: {
+            /** Session Id */
+            session_id: number;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "offline" | "ai";
+            /** Questions */
+            questions: components["schemas"]["QuestionOut"][];
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
+        };
+    };
     responses: never;
     parameters: never;
     requestBodies: never;
@@ -51,6 +284,157 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    create_session_api_sessions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_api_sessions__session_id__answers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnswerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    finish_api_sessions__session_id__finish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinishOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    items_api_items_get: {
+        parameters: {
+            query?: {
+                kind?: string | null;
+                source?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    progress_api_progress_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressOut"];
                 };
             };
         };

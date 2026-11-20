@@ -66,7 +66,7 @@ class SeedContentPlanner:
         )
         picked = [PlannedItem(item, False) for _, item in due[:size]]
 
-        unlocked = self._unlocked(items, states)
+        unlocked = unlocked_items(items, states)
         fresh = [
             item
             for item in items
@@ -90,32 +90,32 @@ class SeedContentPlanner:
             ]
         return picked
 
-    @staticmethod
-    def _unlocked(items: Sequence[Item], states: dict[int, ReviewState]) -> list[Item]:
-        letters = [item for item in items if item.kind == "letter"]
 
-        def reps(item: Item) -> int:
-            state = state_of(states, item)
-            return state.repetitions if state else 0
+def unlocked_items(items: Sequence[Item], states: dict[int, ReviewState]) -> list[Item]:
+    """Letters of open groups plus words whose letters have all been seen."""
+    letters = [item for item in items if item.kind == "letter"]
 
-        open_groups = {1}
-        group = 1
-        while True:
-            members = [letter for letter in letters if letter.group == group]
-            if not members or (
-                sum(reps(letter) >= 2 for letter in members) / len(members)
-                < UNLOCK_RATIO
-            ):
-                break
-            group += 1
-            open_groups.add(group)
-        known = {letter.text for letter in letters if reps(letter) >= 1}
-        return [
-            item
-            for item in items
-            if (item.kind == "letter" and item.group in open_groups)
-            or (
-                item.kind == "word"
-                and all(char in known for char in item.text.upper() if char.isalpha())
-            )
-        ]
+    def reps(item: Item) -> int:
+        state = state_of(states, item)
+        return state.repetitions if state else 0
+
+    open_groups = {1}
+    group = 1
+    while True:
+        members = [letter for letter in letters if letter.group == group]
+        if not members or (
+            sum(reps(letter) >= 2 for letter in members) / len(members) < UNLOCK_RATIO
+        ):
+            break
+        group += 1
+        open_groups.add(group)
+    known = {letter.text for letter in letters if reps(letter) >= 1}
+    return [
+        item
+        for item in items
+        if (item.kind == "letter" and item.group in open_groups)
+        or (
+            item.kind == "word"
+            and all(char in known for char in item.text.upper() if char.isalpha())
+        )
+    ]
