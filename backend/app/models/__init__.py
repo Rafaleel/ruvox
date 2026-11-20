@@ -48,6 +48,9 @@ class Item(Owned, table=True):
     group: int | None = None
     difficulty: int = 1
     song_id: int | None = Field(default=None, foreign_key="song.id")
+    excerpt: str = (
+        ""  # short phrase from the lyric (at most 8 words) for cloze questions
+    )
 
 
 class StudySession(Owned, table=True):
