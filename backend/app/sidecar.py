@@ -6,6 +6,7 @@ import threading
 
 import uvicorn
 
+from app.config import read_settings
 from app.main import create_app
 
 
@@ -25,9 +26,13 @@ def watch_parent(server: SidecarServer) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--host", choices=["127.0.0.1", "localhost"], default="127.0.0.1"
+        "--host",
+        choices=["127.0.0.1", "localhost", "0.0.0.0"],
+        help="default: 127.0.0.1, or 0.0.0.0 when phone access is enabled",
     )
-    parser.add_argument("--port", type=int, default=0)
+    parser.add_argument(
+        "--port", type=int, help="default: any free port, or the saved LAN port"
+    )
     parser.add_argument(
         "--no-stdin-watch",
         action="store_true",
@@ -53,10 +58,14 @@ def main() -> None:
             Anthropic.__name__,
             file=sys.stderr,
         )
+    saved = read_settings()
+    lan = saved.lan_enabled
+    host = args.host or ("0.0.0.0" if lan else "127.0.0.1")
+    port = args.port if args.port is not None else (saved.lan_port if lan else 0)
     config = uvicorn.Config(
-        create_app(),
-        host=args.host,
-        port=args.port,
+        create_app(lan=lan),
+        host=host,
+        port=port,
         proxy_headers=False,
         access_log=False,
         timeout_graceful_shutdown=5,
