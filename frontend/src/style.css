@@ -45,3 +45,10 @@
 body {
   overflow-x: hidden;
 }
+
+/* Phones with a notch or a home indicator: keep the tab bar clear of it. */
+@media (max-width: 47.99rem) {
+  nav[aria-label="Navegação principal"] {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

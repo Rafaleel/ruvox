@@ -29,6 +29,19 @@ def test_api_and_static_routes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         assert client.get("/api/missing").status_code == 404
 
 
+def test_manifest_is_served_with_its_media_type(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("RUVOX_DATA_DIR", str(tmp_path / "profile"))
+    web_dir = tmp_path / "web"
+    web_dir.mkdir()
+    (web_dir / "index.html").write_text("app")
+    (web_dir / "manifest.webmanifest").write_text("{}")
+    with TestClient(create_app(web_dir), base_url="http://localhost") as client:
+        response = client.get("/manifest.webmanifest")
+        assert response.headers["content-type"].startswith("application/manifest+json")
+
+
 def test_openapi_without_server(tmp_path: Path) -> None:
     result = subprocess.check_output(
         [sys.executable, "-m", "app.openapi"],

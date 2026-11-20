@@ -1,3 +1,4 @@
+import mimetypes
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -14,6 +15,8 @@ from app.api import backup, lan_api, progress, sessions, settings, songs, stats
 from app.config import read_settings, write_settings
 from app.db import ROOT, database_engine, run_migrations, seed
 from app.lan import COOKIE, PairingState, host_allowed, new_secret
+
+mimetypes.add_type("application/manifest+json", ".webmanifest")  # the PWA manifest
 
 
 class Frontend(StaticFiles):
