@@ -10,7 +10,7 @@ from starlette.responses import Response
 from starlette.staticfiles import StaticFiles
 from starlette.types import Scope
 
-from app.api import progress, sessions, settings, songs
+from app.api import progress, sessions, settings, songs, stats
 from app.db import ROOT, database_engine, run_migrations, seed
 
 
@@ -51,6 +51,7 @@ def create_app(web_dir: Path = ROOT / "app/web") -> FastAPI:
     app.include_router(progress.router)
     app.include_router(settings.router)
     app.include_router(songs.router)
+    app.include_router(stats.router)
 
     if web_dir.is_dir():
         app.mount("/", Frontend(directory=web_dir, html=True))
