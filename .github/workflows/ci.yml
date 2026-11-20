@@ -21,10 +21,7 @@ jobs:
           version: "0.11.29"
       - run: uv python install 3.12
       - run: uv sync --frozen
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
-      - run: uv run mypy .
-      - run: uv run pytest
+      - run: make -C .. check-backend
 
   frontend:
     runs-on: ubuntu-latest
@@ -45,7 +42,7 @@ jobs:
       - run: uv python install 3.12
       - run: pnpm install --frozen-lockfile
       - run: pnpm gen:api && git diff --exit-code -- src/api/schema.d.ts
-      - run: pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build
+      - run: make -C .. check-frontend
 
   tauri:
     runs-on: ubuntu-latest
@@ -58,6 +55,4 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: src-tauri
-      - run: make -C .. prepare-dev-sidecar
-      - run: cargo clippy -- -D warnings
-      - run: cargo test
+      - run: make -C .. check-tauri
