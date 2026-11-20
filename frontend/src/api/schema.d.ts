@@ -177,10 +177,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/songs/{song_id}/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Song
+         * @description Extract study material without saving anything; the user reviews it first.
+         */
+        post: operations["analyze_song_api_songs__song_id__analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/songs/{song_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Song
+         * @description Save the entries the user kept as study items linked to this song.
+         */
+        post: operations["confirm_song_api_songs__song_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AnalyzedEntry */
+        AnalyzedEntry: {
+            /** Text */
+            text: string;
+            /** Lemma */
+            lemma: string;
+            /** Pronunciation Pt */
+            pronunciation_pt: string;
+            /** Meaning Pt */
+            meaning_pt: string;
+            /**
+             * Part Of Speech
+             * @default
+             */
+            part_of_speech: string;
+            /**
+             * Excerpt
+             * @default
+             */
+            excerpt: string;
+            /** Kind */
+            kind: string;
+            /** Existing Item Id */
+            existing_item_id?: number | null;
+        };
         /** AnswerIn */
         AnswerIn: {
             /** Question Id */
@@ -205,6 +270,40 @@ export interface components {
             explanation: string;
             requeued_question?: components["schemas"]["QuestionOut"] | null;
         };
+        /** ConfirmEntry */
+        ConfirmEntry: {
+            /** Text */
+            text: string;
+            /** Pronunciation Pt */
+            pronunciation_pt: string;
+            /** Meaning Pt */
+            meaning_pt: string;
+            /**
+             * Kind
+             * @default word
+             * @enum {string}
+             */
+            kind: "word" | "expression";
+            /**
+             * Excerpt
+             * @default
+             */
+            excerpt: string;
+        };
+        /** ConfirmIn */
+        ConfirmIn: {
+            /** Entries */
+            entries: components["schemas"]["ConfirmEntry"][];
+        };
+        /** ConfirmOut */
+        ConfirmOut: {
+            /** Created */
+            created: number;
+            /** Skipped */
+            skipped: number;
+            /** Rejected */
+            rejected: number;
+        };
         /** FinishOut */
         FinishOut: {
             /** Score */
@@ -220,6 +319,16 @@ export interface components {
              * Format: date-time
              */
             ended_at: string;
+        };
+        /** GrammarPoint */
+        GrammarPoint: {
+            /** Point Pt */
+            point_pt: string;
+            /**
+             * Excerpt
+             * @default
+             */
+            excerpt: string;
         };
         /** GroupProgress */
         GroupProgress: {
@@ -340,6 +449,13 @@ export interface components {
             key_from_env: boolean;
             /** Model */
             model: string;
+        };
+        /** SongAnalysisOut */
+        SongAnalysisOut: {
+            /** Entries */
+            entries: components["schemas"]["AnalyzedEntry"][];
+            /** Grammar */
+            grammar: components["schemas"]["GrammarPoint"][];
         };
         /** SongDetail */
         SongDetail: {
@@ -760,6 +876,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_song_api_songs__song_id__analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SongAnalysisOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_song_api_songs__song_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmOut"];
+                };
             };
             /** @description Validation Error */
             422: {

@@ -23,6 +23,7 @@ from app.models import LLMCall
 log = logging.getLogger("ruvox.llm")
 PROMPTS = Path(__file__).parent / "prompts"
 TIMEOUT_SECONDS = 20.0
+MAX_TOKENS = 8192  # the music analysis can list 40 words
 
 # USD per million tokens (input, output); first-party API list prices.
 PRICES_PER_MTOK: dict[str, tuple[float, float]] = {
@@ -79,7 +80,7 @@ class AgnoLLM:
                     if self.settings.api_key
                     else None,
                     timeout=TIMEOUT_SECONDS,
-                    max_tokens=4096,
+                    max_tokens=MAX_TOKENS,
                     client_params={"max_retries": 0},
                 ),
                 instructions=load_prompt(prompt),

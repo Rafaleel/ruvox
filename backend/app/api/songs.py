@@ -3,10 +3,20 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session, col, delete, func, select
 
-from app.api.sessions import USER_ID
+from app.agents.llm import LLMUnavailable
+from app.agents.music import SongAnalysisOut, analyze_lyric, clean_excerpt, is_cyrillic
+from app.api.sessions import USER_ID, Llm
 from app.db import get_session
-from app.models import Item, ReviewState, Song
-from app.models.schemas import MAX_LYRICS_CHARS, SongDetail, SongIn, SongOut
+from app.models import Item, ReviewState, Song, now_utc
+from app.models.schemas import (
+    MAX_LYRICS_CHARS,
+    ConfirmIn,
+    ConfirmOut,
+    SongDetail,
+    SongIn,
+    SongOut,
+)
+from app.services.answer_checker import normalize
 
 router = APIRouter(prefix="/api/songs", tags=["songs"])
 Db = Annotated[Session, Depends(get_session)]
@@ -85,3 +95,64 @@ def delete_song(song_id: int, db: Db) -> Response:
     db.delete(song)
     db.commit()
     return Response(status_code=204)
+
+
+def known_items(db: Session) -> dict[str, int]:
+    """Normalized text of everything the learner already studies -> item id."""
+    rows = db.exec(select(Item.text, Item.id).where(Item.user_id == USER_ID)).all()
+    return {normalize(text): item_id for text, item_id in rows if item_id is not None}
+
+
+@router.post("/{song_id}/analyze", response_model=SongAnalysisOut)
+def analyze_song(song_id: int, db: Db, llm: Llm) -> SongAnalysisOut:
+    """Extract study material without saving anything; the user reviews it first."""
+    song = own_song(db, song_id)
+    if llm is None:
+        raise HTTPException(503, "A análise de músicas precisa da chave da API.")
+    try:
+        result = analyze_lyric(llm, song.text, known_items(db))
+    except LLMUnavailable as exc:
+        raise HTTPException(
+            503, "Não foi possível analisar a música agora. Tente de novo em instantes."
+        ) from exc
+    if not result.entries:
+        raise HTTPException(422, "Não encontrei vocabulário em russo nesta letra.")
+    return result
+
+
+@router.post("/{song_id}/confirm", response_model=ConfirmOut)
+def confirm_song(song_id: int, body: ConfirmIn, db: Db) -> ConfirmOut:
+    """Save the entries the user kept as study items linked to this song."""
+    song = own_song(db, song_id)
+    known = known_items(db)
+    created = skipped = rejected = 0
+    for entry in body.entries:
+        key = normalize(entry.text)
+        if (
+            not is_cyrillic(entry.text)
+            or not entry.pronunciation_pt.strip()
+            or not entry.meaning_pt.strip()
+        ):
+            rejected += 1
+        elif key in known:
+            skipped += 1
+        else:
+            item = Item(
+                user_id=USER_ID,
+                kind=entry.kind,
+                text=entry.text.strip(),
+                pronunciation=entry.pronunciation_pt.strip(),
+                meaning=entry.meaning_pt.strip(),
+                source="song",
+                difficulty=2,
+                song_id=song.id,
+                excerpt=clean_excerpt(entry.excerpt, song.text, entry.text),
+            )
+            db.add(item)
+            db.flush()
+            assert item.id is not None
+            db.add(ReviewState(user_id=USER_ID, item_id=item.id, next_review=now_utc()))
+            known[key] = item.id
+            created += 1
+    db.commit()
+    return ConfirmOut(created=created, skipped=skipped, rejected=rejected)

@@ -116,3 +116,21 @@ class SongOut(BaseModel):
 
 class SongDetail(SongOut):
     text: str
+
+
+class ConfirmEntry(BaseModel):
+    text: str = Field(max_length=100)
+    pronunciation_pt: str = Field(max_length=100)
+    meaning_pt: str = Field(max_length=200)
+    kind: Literal["word", "expression"] = "word"
+    excerpt: str = Field(default="", max_length=300)
+
+
+class ConfirmIn(BaseModel):
+    entries: list[ConfirmEntry] = Field(max_length=40)
+
+
+class ConfirmOut(BaseModel):
+    created: int
+    skipped: int  # already studied (same text)
+    rejected: int  # not valid Cyrillic or missing pronunciation/meaning
