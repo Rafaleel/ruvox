@@ -1,7 +1,17 @@
+import { Check, RotateCw, X } from "lucide-react";
 import { useState } from "react";
 import type { Question } from "../api/client";
 import { Button } from "./Button";
-import { Card } from "./Card";
+import { cx } from "./cx";
+import { Icon } from "./Icon";
+
+const softButton =
+  "inline-flex min-h-13 items-center justify-center gap-2 rounded-control px-6 py-2 text-lg font-semibold select-none " +
+  "transition-[transform,filter] duration-150 ease-out-soft active:scale-[.97] hover:brightness-95 " +
+  "disabled:pointer-events-none disabled:opacity-50";
+
+const face =
+  "margin-rule grid [grid-area:1/1] place-items-center rounded-hero bg-sheet py-8 pr-6 pl-12 text-center shadow-card backface-hidden";
 
 /** Self-graded card: flip to see the answer, then say whether you knew it. */
 export function Flashcard({
@@ -16,35 +26,88 @@ export function Flashcard({
   onAnswer: (answer: "knew" | "missed") => void;
 }) {
   const [flipped, setFlipped] = useState(false);
+  const showBack = flipped || done;
   return (
     <>
-      <Card className="mt-6 text-center">
-        <p className="text-5xl font-extrabold break-words" lang="ru">
-          {question.prompt}
-        </p>
-        {(flipped || done) && (
-          <p className="mt-4 border-t border-line pt-4 text-xl">
-            {question.reveal}
-          </p>
-        )}
-      </Card>
-      {!flipped && !done && (
-        <Button className="mt-4 w-full" onClick={() => setFlipped(true)}>
+      <div className="mt-6 [perspective:1200px]">
+        <div
+          className={cx(
+            "grid min-h-72 transform-3d transition-transform duration-300 ease-out-soft",
+            showBack && "rotate-y-180",
+          )}
+        >
+          <div className={face}>
+            <div>
+              <p
+                lang="ru"
+                className={cx(
+                  "font-serif leading-none font-semibold break-words text-ink",
+                  [...question.prompt].length <= 4
+                    ? "text-letter-hero"
+                    : "text-[2.75rem] sm:text-[3.5rem]",
+                )}
+              >
+                {question.prompt}
+              </p>
+              <p className="mt-6 text-sm text-ink-3">
+                Lembra o que significa? Vire para conferir.
+              </p>
+            </div>
+          </div>
+          {showBack && (
+            <div className={cx(face, "rotate-y-180")}>
+              <div>
+                <p
+                  lang="ru"
+                  aria-hidden="true"
+                  className="font-serif text-2xl leading-none text-ink-3"
+                >
+                  {question.prompt}
+                </p>
+                <p className="mt-5 text-xl leading-snug font-semibold text-ink">
+                  {question.reveal}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      {!showBack && (
+        <Button
+          size="lg"
+          icon={RotateCw}
+          className="mt-4 w-full"
+          onClick={() => setFlipped(true)}
+        >
           Virar
         </Button>
       )}
       {flipped && !done && (
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <Button
-            variant="secondary"
+          <button
+            type="button"
             disabled={disabled}
             onClick={() => onAnswer("missed")}
+            className={cx(
+              softButton,
+              "bg-danger-soft text-danger shadow-[inset_0_0_0_1px_var(--danger)]",
+            )}
           >
+            <Icon icon={X} />
             Errei
-          </Button>
-          <Button disabled={disabled} onClick={() => onAnswer("knew")}>
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onAnswer("knew")}
+            className={cx(
+              softButton,
+              "bg-success-soft text-success shadow-[inset_0_0_0_1px_var(--success)]",
+            )}
+          >
+            <Icon icon={Check} />
             Sabia
-          </Button>
+          </button>
         </div>
       )}
     </>
