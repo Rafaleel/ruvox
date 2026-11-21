@@ -32,6 +32,9 @@ import {
   type Song,
   type SongAnalysis,
 } from "./api/client";
+import { DomeSkyline } from "./components/art/DomeSkyline";
+import { GhostLetter } from "./components/art/GhostLetter";
+import { StampFrame } from "./components/art/StampFrame";
 import { Badge } from "./components/Badge";
 import { Button, buttonClasses } from "./components/Button";
 import { Card } from "./components/Card";
@@ -94,10 +97,15 @@ function NewSongForm({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <Card className="rise mt-6 rounded-hero p-5 md:p-8">
+    <Card className="rise margin-rule rounded-hero p-5 pl-9 @[52rem]:p-7 @[52rem]:pl-11">
       <form onSubmit={submit} className="grid gap-5">
-        <h2>Nova música</h2>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <p className="text-sm font-semibold tracking-wide text-accent">
+            Novo caderno
+          </p>
+          <h2>Nova música</h2>
+        </div>
+        <div className="grid gap-5 @[28rem]:grid-cols-2">
           <Input
             label="Título"
             value={title}
@@ -116,8 +124,8 @@ function NewSongForm({ onDone }: { onDone: () => void }) {
             id="lyrics"
             label="Letra"
             lang="ru"
-            rows={8}
-            className="font-serif text-lg leading-relaxed"
+            rows={9}
+            className="font-serif text-lg leading-relaxed min-h-[12rem]"
             aria-describedby="lyrics-help lyrics-count lyrics-error"
             help="A letra fica só neste computador."
             error={
@@ -185,20 +193,32 @@ function SongRow({
   });
   const [confirming, setConfirming] = useState(false);
 
+  const initial = song.title.trim().charAt(0).toUpperCase() || "♪";
   return (
-    <Card className="p-4 sm:p-5">
-      <h2 className="text-h3 break-words">{song.title}</h2>
-      {song.artist && <p className="text-ink-2">{song.artist}</p>}
-      <Badge
-        tone={song.items > 0 ? "gold" : "neutral"}
-        icon={Library}
-        className="mt-3"
-      >
-        {song.items > 0
-          ? plural(song.items, "palavra salva", "palavras salvas")
-          : "Nenhuma palavra salva ainda"}
-      </Badge>
-      <div className="mt-4 flex flex-wrap gap-2">
+    <Card className="@container relative overflow-hidden p-0!">
+      <div className="flex gap-4 p-4 @[28rem]:p-5">
+        <span
+          aria-hidden="true"
+          lang="ru"
+          className="grid size-14 shrink-0 place-items-center rounded-[0.9rem] bg-(image:--foil) font-serif text-3xl leading-none font-semibold text-gold-ink shadow-[inset_0_0_0_1px_var(--gold)]"
+        >
+          {initial}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-h2 leading-tight break-words">{song.title}</h2>
+          {song.artist && <p className="mt-0.5 text-ink-2">{song.artist}</p>}
+          <Badge
+            tone={song.items > 0 ? "gold" : "neutral"}
+            icon={Library}
+            className="mt-3"
+          >
+            {song.items > 0
+              ? plural(song.items, "palavra salva", "palavras salvas")
+              : "Nenhuma palavra salva ainda"}
+          </Badge>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 border-t border-hairline bg-sheet-2/50 px-4 py-3 @[28rem]:px-5">
         {song.items > 0 && (
           <Link
             to={`/play?song=${song.id}`}
@@ -218,28 +238,30 @@ function SongRow({
         <Button
           variant="ghost"
           icon={Trash2}
-          className="sm:ml-auto"
+          className="ml-auto size-11 px-0 hover:bg-danger-soft hover:text-danger"
+          aria-label="Apagar"
+          title="Apagar música"
           onClick={() => setConfirming(true)}
-        >
-          Apagar
-        </Button>
+        />
       </div>
       {confirming && (
-        <ConfirmPanel
-          title={`Apagar “${song.title}”?`}
-          confirmLabel={remove.isPending ? "Apagando…" : "Apagar de vez"}
-          busy={remove.isPending}
-          onConfirm={() => remove.mutate()}
-          onCancel={() => setConfirming(false)}
-        >
-          <p>
-            As palavras salvas dela e o seu progresso nessas palavras também
-            serão apagados. Não dá para desfazer.
-          </p>
-        </ConfirmPanel>
+        <div className="p-4 pt-0 @[28rem]:px-5">
+          <ConfirmPanel
+            title={`Apagar “${song.title}”?`}
+            confirmLabel={remove.isPending ? "Apagando…" : "Apagar de vez"}
+            busy={remove.isPending}
+            onConfirm={() => remove.mutate()}
+            onCancel={() => setConfirming(false)}
+          >
+            <p>
+              As palavras salvas dela e o seu progresso nessas palavras também
+              serão apagados. Não dá para desfazer.
+            </p>
+          </ConfirmPanel>
+        </div>
       )}
       {remove.isError && (
-        <div className="mt-3">
+        <div className="p-4 pt-0">
           <ErrorMessage error={remove.error} onRetry={() => remove.mutate()} />
         </div>
       )}
@@ -260,9 +282,11 @@ function EntryCard({
   return (
     <label
       className={cx(
-        "flex gap-4 rounded-card p-4 shadow-card transition-[transform,box-shadow] duration-150 ease-out-soft",
-        "has-checked:shadow-[0_0_0_2px_var(--accent)] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent",
-        studied ? "bg-sheet-2" : "cursor-pointer bg-sheet active:scale-[.99]",
+        "relative flex h-full gap-4 overflow-hidden rounded-card p-4 shadow-card transition-[transform,box-shadow,background-color] duration-150 ease-out-soft @[28rem]:p-5",
+        "has-checked:bg-accent-soft/40 has-checked:shadow-[0_0_0_2px_var(--accent)] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent",
+        studied
+          ? "bg-sheet-2"
+          : "cursor-pointer bg-sheet hover:-translate-y-0.5 active:scale-[.99]",
       )}
     >
       <input
@@ -274,19 +298,19 @@ function EntryCard({
       />
       <span
         aria-hidden="true"
-        className="mt-1 grid size-6 shrink-0 place-items-center rounded-md border border-rule bg-sheet text-transparent transition-colors peer-checked:border-accent peer-checked:bg-accent peer-checked:text-on-accent peer-disabled:border-hairline peer-disabled:bg-transparent peer-disabled:text-ink-3"
+        className="mt-1.5 grid size-6 shrink-0 place-items-center rounded-full border border-rule bg-sheet text-transparent transition-[background-color,border-color,transform] duration-150 peer-checked:scale-110 peer-checked:border-accent peer-checked:bg-accent peer-checked:text-on-accent peer-disabled:border-hairline peer-disabled:bg-transparent peer-disabled:text-ink-3"
       >
-        <Icon icon={Check} size={16} strokeWidth={3} />
+        <Icon icon={Check} size={14} strokeWidth={3} />
       </span>
-      <span className="grid min-w-0 flex-1 gap-2">
-        <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <span
-            lang="ru"
-            className="font-serif text-2xl leading-tight font-semibold break-words text-ink"
-          >
-            {entry.text}
-          </span>
-          <span className="rounded-control bg-sheet-2 px-2.5 py-0.5 text-sm font-medium text-ink-2">
+      <span className="grid min-w-0 flex-1 content-start gap-2">
+        <span
+          lang="ru"
+          className="font-serif text-[2rem] leading-none font-semibold tracking-tight break-words text-ink"
+        >
+          {entry.text}
+        </span>
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-sheet-2 px-3 py-0.5 text-sm font-medium text-ink-2 shadow-[inset_0_0_0_1px_var(--hairline)]">
             {entry.pronunciation_pt}
           </span>
           {studied && (
@@ -295,7 +319,9 @@ function EntryCard({
             </Badge>
           )}
         </span>
-        <span className="text-ink">{entry.meaning_pt}</span>
+        <span className="text-lg leading-snug text-ink">
+          {entry.meaning_pt}
+        </span>
         <span className="text-sm text-ink-3">
           {entry.kind === "expression" ? "expressão" : "palavra"}
           {entry.part_of_speech && ` · ${entry.part_of_speech}`}
@@ -303,7 +329,7 @@ function EntryCard({
         {entry.excerpt && (
           <span
             lang="ru"
-            className="border-l-2 border-gold pl-3 font-serif text-ink-2 italic"
+            className="mt-1 border-l-2 border-gold pl-3 font-serif text-ink-2 italic"
           >
             «{entry.excerpt}»
           </span>
@@ -400,39 +426,47 @@ function Review({
         description="Marque o que você quer estudar. Nada é salvo antes de você confirmar."
         className="rise"
       />
-      <ul className="mt-6 grid gap-3">
-        {analysis.entries.map((e, i) => (
-          <li key={i} className="rise" style={stagger(Math.min(i, 6))}>
-            <EntryCard
-              entry={e}
-              checked={selected.has(i)}
-              onToggle={() => toggle(i)}
-            />
-          </li>
-        ))}
-      </ul>
-      {analysis.grammar.length > 0 && (
-        <section className="mt-10">
-          <h2 className="mb-4">Pontos de gramática</h2>
-          <ul className="grid gap-3">
-            {analysis.grammar.map((g, i) => (
-              <li key={i}>
-                <Notice tone="info">
-                  <p>{g.point_pt}</p>
-                  {g.excerpt && (
-                    <p
-                      className="mt-1.5 border-l-2 border-gold pl-3 font-serif text-ink-2 italic"
-                      lang="ru"
-                    >
-                      «{g.excerpt}»
-                    </p>
-                  )}
-                </Notice>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <div
+        className={cx(
+          "mt-6 grid gap-8",
+          analysis.grammar.length > 0 &&
+            "@[56rem]:grid-cols-[minmax(0,1fr)_20rem] @[56rem]:items-start",
+        )}
+      >
+        <ul className="grid content-start gap-3 @[44rem]:grid-cols-2">
+          {analysis.entries.map((e, i) => (
+            <li key={i} className="rise" style={stagger(Math.min(i, 6))}>
+              <EntryCard
+                entry={e}
+                checked={selected.has(i)}
+                onToggle={() => toggle(i)}
+              />
+            </li>
+          ))}
+        </ul>
+        {analysis.grammar.length > 0 && (
+          <section className="@[56rem]:sticky @[56rem]:top-4">
+            <h2 className="mb-4 text-h3">Pontos de gramática</h2>
+            <ul className="grid gap-3">
+              {analysis.grammar.map((g, i) => (
+                <li key={i}>
+                  <Notice tone="info">
+                    <p className="font-medium">{g.point_pt}</p>
+                    {g.excerpt && (
+                      <p
+                        className="mt-1.5 border-l-2 border-gold pl-3 font-serif text-ink-2 italic"
+                        lang="ru"
+                      >
+                        «{g.excerpt}»
+                      </p>
+                    )}
+                  </Notice>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
       {confirm.isError && (
         <div className="mt-6">
           <ErrorMessage
@@ -441,7 +475,7 @@ function Review({
           />
         </div>
       )}
-      <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[5] mt-6 grid grid-cols-2 items-center gap-x-3 gap-y-2 rounded-card bg-sheet p-3 shadow-card sm:grid-cols-[1fr_auto_auto] sm:pl-4 md:bottom-4">
+      <div className="sticky bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[5] mt-6 grid grid-cols-2 items-center gap-x-3 gap-y-2 rounded-card bg-sheet/90 p-3 shadow-float backdrop-blur sm:grid-cols-[1fr_auto_auto] sm:pl-5">
         <p aria-live="polite" className="font-semibold">
           {selected.size} de {newCount} selecionadas
         </p>
@@ -577,62 +611,92 @@ export function Songs() {
         action={!adding && !empty ? addButton : undefined}
         className="rise"
       />
-      {adding && <NewSongForm onDone={() => setAdding(false)} />}
-      {songs.isError && (
-        <div className="mt-6">
-          <ErrorMessage error={songs.error} onRetry={() => songs.refetch()} />
-        </div>
-      )}
-      {songs.isPending && (
-        <div role="status" className="mt-6 grid gap-3">
-          <span className="sr-only">Carregando…</span>
-          {[0, 1].map((i) => (
-            <div
-              key={i}
-              aria-hidden="true"
-              className="animate-pulse rounded-card bg-sheet p-5 shadow-card motion-reduce:animate-none"
-            >
-              <div className="h-6 w-2/5 rounded-control bg-sheet-2" />
-              <div className="mt-2 h-4 w-1/4 rounded-control bg-sheet-2" />
-              <div className="mt-5 h-11 w-40 rounded-control bg-sheet-2" />
+      <div
+        className={cx(
+          "mt-6 grid gap-6 @[52rem]:mt-8",
+          adding &&
+            "@[52rem]:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] @[52rem]:items-start @[52rem]:gap-8",
+        )}
+      >
+        <div className="grid min-w-0 content-start gap-4">
+          {songs.isError && (
+            <ErrorMessage error={songs.error} onRetry={() => songs.refetch()} />
+          )}
+          {songs.isPending && (
+            <div role="status" className="grid gap-3">
+              <span className="sr-only">Carregando…</span>
+              {[0, 1].map((i) => (
+                <div
+                  key={i}
+                  aria-hidden="true"
+                  className="animate-pulse rounded-card bg-sheet p-5 shadow-card motion-reduce:animate-none"
+                >
+                  <div className="flex gap-4">
+                    <div className="size-14 rounded-[0.9rem] bg-sheet-2" />
+                    <div className="grid flex-1 content-start gap-2">
+                      <div className="h-6 w-2/5 rounded-control bg-sheet-2" />
+                      <div className="h-4 w-1/4 rounded-control bg-sheet-2" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+          {empty && !adding && (
+            <section
+              className="rise @container relative overflow-hidden rounded-sheet bg-sheet text-center shadow-card"
+              style={stagger(1)}
+            >
+              <div
+                aria-hidden="true"
+                className="bg-linear-to-b from-sheet-2 to-sheet pt-6"
+              >
+                <DomeSkyline className="mx-auto block max-h-[7rem] w-full" />
+              </div>
+              <div className="relative px-6 pt-4 pb-10">
+                <div aria-hidden="true" className="ruled absolute inset-0" />
+                <GhostLetter
+                  letter="Ж"
+                  className="-right-[8%] -bottom-[18%] w-[46%]"
+                />
+                <StampFrame className="stamp-in relative mx-auto grid size-16 place-items-center">
+                  <Icon icon={Music2} size={28} />
+                </StampFrame>
+                <p className="relative mt-5 font-serif text-h2 font-semibold text-balance">
+                  Você ainda não adicionou músicas.
+                </p>
+                <p className="relative mx-auto mt-2 max-w-sm text-ink-2">
+                  Cole a letra de uma música em russo e a IA separa as palavras
+                  para você estudar. A letra fica só neste computador.
+                </p>
+                <div className="relative mt-6">{addButton}</div>
+              </div>
+            </section>
+          )}
+          <ul className={cx("grid gap-4", !adding && "@[52rem]:grid-cols-2")}>
+            {songs.data?.map((song, i) => (
+              <li
+                key={song.id}
+                className="rise"
+                style={stagger(Math.min(i, 6))}
+              >
+                <SongRow
+                  song={song}
+                  onAnalyze={(s) => {
+                    setTarget(s);
+                    analyze.mutate(s.id);
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
         </div>
-      )}
-      {empty && !adding && (
-        <section
-          className="rise mt-8 flex flex-col items-center rounded-hero bg-sheet px-6 py-12 text-center shadow-card"
-          style={stagger(1)}
-        >
-          <span
-            aria-hidden="true"
-            className="grid size-16 place-items-center rounded-hero bg-sheet-2 text-ink-2"
-          >
-            <Icon icon={Music2} size={32} />
-          </span>
-          <p className="mt-5 font-serif text-h3 font-semibold">
-            Você ainda não adicionou músicas.
-          </p>
-          <p className="mt-2 max-w-sm text-ink-2">
-            Cole a letra de uma música em russo e a IA separa as palavras para
-            você estudar. A letra fica só neste computador.
-          </p>
-          <div className="mt-6">{addButton}</div>
-        </section>
-      )}
-      <ul className="mt-6 grid gap-3">
-        {songs.data?.map((song, i) => (
-          <li key={song.id} className="rise" style={stagger(Math.min(i, 6))}>
-            <SongRow
-              song={song}
-              onAnalyze={(s) => {
-                setTarget(s);
-                analyze.mutate(s.id);
-              }}
-            />
-          </li>
-        ))}
-      </ul>
+        {adding && (
+          <div className="@[52rem]:sticky @[52rem]:top-4">
+            <NewSongForm onDone={() => setAdding(false)} />
+          </div>
+        )}
+      </div>
     </>
   );
 }

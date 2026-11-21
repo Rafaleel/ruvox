@@ -23,6 +23,7 @@ import { ConfirmPanel } from "./components/ConfirmPanel";
 import { friendlyError } from "./components/ErrorMessage";
 import { Input, Select } from "./components/Field";
 import { Icon } from "./components/Icon";
+import { StampFrame } from "./components/art/StampFrame";
 import { stagger } from "./components/motion";
 import { Notice } from "./components/Notice";
 
@@ -42,12 +43,10 @@ function StatusBadge({
 }) {
   if (active)
     return (
-      <Badge
-        tone={missingStep(provider) ? "gold" : "success"}
-        icon={CircleCheck}
-      >
+      <StampFrame className="stamp-in flex w-fit items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold">
+        <Icon icon={CircleCheck} size={16} />
         Em uso
-      </Badge>
+      </StampFrame>
     );
   if (provider.key_from_env)
     return <Badge icon={KeyRound}>Chave da variável de ambiente</Badge>;
@@ -58,6 +57,39 @@ function StatusBadge({
       </Badge>
     );
   return <Badge>Sem chave</Badge>;
+}
+
+/** Monogram tiles: simple letters on token colors, never a trademarked logo. */
+const marks: Record<string, string> = {
+  anthropic: "bg-accent-soft text-accent",
+  openai: "bg-success-soft text-success",
+  groq: "bg-gold-soft text-gold-ink",
+};
+
+/** A numbered step of the notebook-style procedure: key, model, activation. */
+function Step({
+  n,
+  title,
+  children,
+}: {
+  n: number;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid gap-3 border-t border-hairline pt-5 first:border-t-0 first:pt-0">
+      <h4 className="flex items-center gap-2.5 text-sm font-semibold tracking-wide uppercase text-ink-2">
+        <span
+          aria-hidden="true"
+          className="grid size-6 place-items-center rounded-full bg-sheet-2 font-serif text-sm font-semibold text-ink normal-case"
+        >
+          {n}
+        </span>
+        {title}
+      </h4>
+      {children}
+    </div>
+  );
 }
 
 const optionText = (m: { id: string; label: string }) =>
@@ -145,99 +177,126 @@ export function ProviderCard({
   const hint = needs ?? (active ? "Esta é a IA usada nas sessões." : null);
 
   return (
-    <Card margin={active} className="rise" style={stagger(index)}>
-      <section aria-labelledby={titleId} className="grid gap-5">
-        <header className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+    <Card
+      margin={active}
+      className={`rise @container relative overflow-hidden p-0! ${active ? "shadow-[0_0_0_1.5px_var(--gold),var(--card-shadow)]" : ""}`}
+      style={stagger(index)}
+    >
+      <section
+        aria-labelledby={titleId}
+        className="grid @[38rem]:grid-cols-[15rem_minmax(0,1fr)]"
+      >
+        <header
+          className={`relative flex flex-col gap-3 overflow-hidden p-5 @[38rem]:p-6 ${active ? "bg-gold-soft/50" : "bg-sheet-2/60"}`}
+        >
+          <span
+            aria-hidden="true"
+            className={`grid size-14 place-items-center rounded-[1.1rem] font-serif text-3xl leading-none font-semibold shadow-[inset_0_0_0_1px_var(--hairline)] ${marks[id] ?? marks.groq}`}
+          >
+            {maker.charAt(0)}
+          </span>
           <div>
             {label !== maker && (
               <p className="text-sm font-semibold tracking-wide text-accent">
                 {label}
               </p>
             )}
-            <h3 id={titleId} className="text-h2">
+            <h3
+              id={titleId}
+              className="text-[clamp(1.75rem,5cqw,2.25rem)] leading-none tracking-tight"
+            >
               {maker}
             </h3>
           </div>
-          <StatusBadge provider={provider} active={active} />
+          <div className="@[38rem]:mt-auto">
+            <StatusBadge provider={provider} active={active} />
+          </div>
         </header>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <form onSubmit={saveKey} className="grid content-start gap-3">
-            <Input
-              label={`Chave da API da ${label}`}
-              type="password"
-              autoComplete="off"
-              spellCheck={false}
-              placeholder={provider.key_example}
-              value={keyDraft}
-              disabled={key_from_env}
-              onChange={(e) => setKeyDraft(e.target.value)}
-              help={
-                <>
-                  {has_key
-                    ? "Há uma chave salva neste computador. Digite outra para trocar. "
-                    : "Fica só neste computador. "}
-                  <a
-                    href={provider.key_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 font-semibold text-accent underline underline-offset-2"
-                  >
-                    Criar chave
-                    <span className="sr-only">
-                      {" "}
-                      da {label} (abre em nova aba)
-                    </span>
-                    <Icon icon={ExternalLink} size={14} />
-                  </a>
-                </>
-              }
-            />
-            {key_from_env && (
-              <p className="text-sm text-ink-2">
-                A chave vem de uma variável de ambiente e não pode ser alterada
-                aqui, mas você pode escolher o modelo.
-              </p>
-            )}
-            <div className="grid gap-2 sm:flex sm:flex-wrap">
-              <Button
-                type="submit"
-                disabled={key_from_env || !keyDraft.trim() || save.isPending}
-                loading={saving("api_key") && keyDraft !== ""}
-              >
-                Salvar chave
-              </Button>
-              <Button
-                variant="ghost"
-                icon={Trash2}
-                disabled={key_from_env || !has_key || save.isPending}
-                onClick={() => setConfirmRemove(true)}
-              >
-                Remover chave
-              </Button>
-            </div>
-            {confirmRemove && (
-              <ConfirmPanel
-                title={`Remover a chave da ${label}?`}
-                confirmLabel="Sim, remover"
-                busy={save.isPending}
-                onConfirm={removeKey}
-                onCancel={() => setConfirmRemove(false)}
-              >
-                <p>
-                  O Ruvox deixa de usar o {maker} até você salvar outra chave.
+        <div
+          className={`grid content-start gap-5 p-5 @[38rem]:p-6 ${active ? "margin-rule pl-9 @[38rem]:pl-9" : ""}`}
+        >
+          <Step n={1} title="Chave">
+            <form onSubmit={saveKey} className="grid content-start gap-3">
+              <Input
+                label={`Chave da API da ${label}`}
+                type="password"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder={provider.key_example}
+                value={keyDraft}
+                disabled={key_from_env}
+                onChange={(e) => setKeyDraft(e.target.value)}
+                help={
+                  <>
+                    {has_key
+                      ? "Há uma chave salva neste computador. Digite outra para trocar. "
+                      : "Fica só neste computador. "}
+                    <a
+                      href={provider.key_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 font-semibold text-accent underline underline-offset-2"
+                    >
+                      Criar chave
+                      <span className="sr-only">
+                        {" "}
+                        da {label} (abre em nova aba)
+                      </span>
+                      <Icon icon={ExternalLink} size={14} />
+                    </a>
+                  </>
+                }
+              />
+              {key_from_env && (
+                <p className="text-sm text-ink-2">
+                  A chave vem de uma variável de ambiente e não pode ser
+                  alterada aqui, mas você pode escolher o modelo.
                 </p>
-              </ConfirmPanel>
-            )}
-          </form>
+              )}
+              <div className="grid gap-2 @[30rem]:flex @[30rem]:flex-wrap">
+                <Button
+                  type="submit"
+                  disabled={key_from_env || !keyDraft.trim() || save.isPending}
+                  loading={saving("api_key") && keyDraft !== ""}
+                >
+                  Salvar chave
+                </Button>
+                <Button
+                  variant="ghost"
+                  icon={Trash2}
+                  disabled={key_from_env || !has_key || save.isPending}
+                  onClick={() => setConfirmRemove(true)}
+                >
+                  Remover chave
+                </Button>
+              </div>
+              {confirmRemove && (
+                <ConfirmPanel
+                  title={`Remover a chave da ${label}?`}
+                  confirmLabel="Sim, remover"
+                  busy={save.isPending}
+                  onConfirm={removeKey}
+                  onCancel={() => setConfirmRemove(false)}
+                >
+                  <p>
+                    O Ruvox deixa de usar o {maker} até você salvar outra chave.
+                  </p>
+                </ConfirmPanel>
+              )}
+            </form>
+          </Step>
 
-          <div className="grid content-start gap-3 md:border-l md:border-hairline md:pl-6">
-            <div>
-              <h4 className="text-sm font-semibold">Modelo</h4>
-              <p className="text-ink-2">
-                {model ? `Modelo salvo: ${model}` : "Nenhum modelo escolhido."}
-              </p>
-            </div>
+          <Step n={2} title="Modelo">
+            <p
+              className={
+                model
+                  ? "w-fit max-w-full rounded-control bg-sheet-2 px-3 py-1.5 font-medium break-all shadow-[inset_0_0_0_1px_var(--hairline)]"
+                  : "text-ink-3"
+              }
+            >
+              {model ? `Modelo salvo: ${model}` : "Nenhum modelo escolhido."}
+            </p>
             {list && (
               <Select
                 label="Modelos disponíveis"
@@ -261,7 +320,7 @@ export function ProviderCard({
                 ))}
               </Select>
             )}
-            <div className="grid gap-2 sm:flex sm:flex-wrap">
+            <div className="grid gap-2 @[30rem]:flex @[30rem]:flex-wrap">
               <Button
                 variant="secondary"
                 icon={ListRestart}
@@ -293,49 +352,59 @@ export function ProviderCard({
                 digitar.
               </p>
             )}
-          </div>
-        </div>
+          </Step>
 
-        {error && <Notice tone="danger">{friendlyError(error)}</Notice>}
+          {error && <Notice tone="danger">{friendlyError(error)}</Notice>}
 
-        <footer className="grid gap-3 border-t border-hairline pt-4">
-          <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-x-4">
-            {!active && (
+          <Step n={3} title="Ativação">
+            <div className="grid gap-2 @[30rem]:flex @[30rem]:flex-wrap @[30rem]:items-center @[30rem]:gap-x-3">
+              {!active && (
+                <Button
+                  variant={needs ? "secondary" : "primary"}
+                  icon={Sparkles}
+                  disabled={!!needs || save.isPending}
+                  loading={saving("active")}
+                  onClick={() => {
+                    test.reset();
+                    save.mutate({ active_provider: id });
+                  }}
+                >
+                  Usar esta IA nas sessões
+                </Button>
+              )}
               <Button
-                variant={needs ? "secondary" : "primary"}
-                icon={Sparkles}
-                disabled={!!needs || save.isPending}
-                loading={saving("active")}
-                onClick={() => {
-                  test.reset();
-                  save.mutate({ active_provider: id });
-                }}
+                variant="secondary"
+                icon={Plug}
+                disabled={!!needs}
+                loading={test.isPending}
+                onClick={() => test.mutate()}
               >
-                Usar esta IA nas sessões
+                Testar conexão
               </Button>
+            </div>
+            {hint && (
+              <p
+                className={
+                  needs
+                    ? "text-sm text-ink-2"
+                    : "text-sm font-medium text-gold-ink"
+                }
+              >
+                {hint}
+              </p>
             )}
-            <Button
-              variant="secondary"
-              icon={Plug}
-              disabled={!!needs}
-              loading={test.isPending}
-              onClick={() => test.mutate()}
-            >
-              Testar conexão
-            </Button>
-            {hint && <p className="text-sm text-ink-2">{hint}</p>}
-          </div>
-          <div aria-live="polite">
-            {test.data && (
-              <Notice tone={test.data.ok ? "success" : "danger"}>
-                {test.data.message}
-              </Notice>
-            )}
-            {test.isError && (
-              <Notice tone="danger">{friendlyError(test.error)}</Notice>
-            )}
-          </div>
-        </footer>
+            <div aria-live="polite" className="empty:hidden">
+              {test.data && (
+                <Notice tone={test.data.ok ? "success" : "danger"}>
+                  {test.data.message}
+                </Notice>
+              )}
+              {test.isError && (
+                <Notice tone="danger">{friendlyError(test.error)}</Notice>
+              )}
+            </div>
+          </Step>
+        </div>
       </section>
     </Card>
   );

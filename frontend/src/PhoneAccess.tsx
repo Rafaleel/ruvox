@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { RefreshCw, Unplug } from "lucide-react";
+import { Check, Copy, RefreshCw, Unplug } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import {
   ApiError,
@@ -9,10 +9,12 @@ import {
   setLan,
   unpairAll,
 } from "./api/client";
+import { StampFrame } from "./components/art/StampFrame";
 import { Button } from "./components/Button";
 import { Card } from "./components/Card";
 import { ConfirmPanel } from "./components/ConfirmPanel";
 import { ErrorMessage, friendlyError } from "./components/ErrorMessage";
+import { Icon } from "./components/Icon";
 import { Notice } from "./components/Notice";
 import { Section } from "./components/Section";
 import { Switch } from "./components/Switch";
@@ -56,6 +58,34 @@ function useReloadWhenBack(active: boolean) {
     };
   }, [active]);
   return timedOut;
+}
+
+/** An address as a chip: click to copy it (the text stays selectable as a fallback). */
+function CopyChip({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // No clipboard permission: the address can still be selected by hand.
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title="Copiar endereço"
+      className="group flex w-full items-center justify-between gap-3 rounded-full bg-sheet-2 py-2 pr-2 pl-4 text-left font-medium break-all shadow-[inset_0_0_0_1px_var(--hairline)] transition-[transform,background-color] duration-150 ease-out-soft hover:bg-sheet active:scale-[.98]"
+    >
+      <span>{text}</span>
+      <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-sheet px-2.5 py-1 text-xs font-semibold text-ink-2 shadow-card">
+        <Icon icon={copied ? Check : Copy} size={14} />
+        <span aria-live="polite">{copied ? "Copiado" : "Copiar"}</span>
+      </span>
+    </button>
+  );
 }
 
 export function PhoneAccess() {
@@ -119,7 +149,7 @@ export function PhoneAccess() {
 
   return (
     <Section title={TITLE} description={INTRO}>
-      <Card className="grid gap-4">
+      <Card className="@container grid gap-4">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p id={switchLabel} className="font-semibold">
@@ -185,7 +215,22 @@ export function PhoneAccess() {
               Enquanto estiver ligado, quem estiver pareado pode usar o app e a
               sua chave. Use só em redes em que você confia.
             </Notice>
-            <div className="grid gap-5 md:grid-cols-2">
+            <div className="grid items-center gap-6 @[40rem]:grid-cols-[auto_minmax(0,1fr)] @[40rem]:gap-8">
+              <div>
+                <p className="text-sm font-semibold text-ink-2">
+                  Código de pareamento
+                </p>
+                {code && (
+                  <StampFrame className="stamp-in mt-2 px-8 py-5 text-center">
+                    <p className="font-serif text-[clamp(2.5rem,9cqw,3.75rem)] leading-none font-semibold tracking-[0.14em] indent-[0.14em] text-gold-ink">
+                      <span aria-hidden="true">{code}</span>
+                      <span className="sr-only">
+                        {code.split("").join(" ")}
+                      </span>
+                    </p>
+                  </StampFrame>
+                )}
+              </div>
               <div>
                 <p className="text-sm font-semibold text-ink-2">
                   {urls.length === 1 ? "Endereço" : "Endereços"} para abrir no
@@ -193,25 +238,14 @@ export function PhoneAccess() {
                 </p>
                 <ul className="mt-2 grid gap-2">
                   {urls.map((url) => (
-                    <li
-                      key={url}
-                      className="rounded-control bg-sheet-2 px-3.5 py-3 font-medium break-all shadow-[inset_0_0_0_1px_var(--hairline)]"
-                    >
-                      {url}
+                    <li key={url}>
+                      <CopyChip text={url} />
                     </li>
                   ))}
                 </ul>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-ink-2">
-                  Código de pareamento
+                <p className="mt-2 text-sm text-ink-3">
+                  Digite o endereço no navegador do celular e depois o código.
                 </p>
-                {code && (
-                  <p className="mt-2 rounded-card bg-gold-soft px-4 py-3 text-center font-serif text-5xl font-semibold tracking-[0.18em] text-gold-ink outline-2 -outline-offset-6 outline-gold/50 outline-dashed">
-                    <span aria-hidden="true">{code}</span>
-                    <span className="sr-only">{code.split("").join(" ")}</span>
-                  </p>
-                )}
               </div>
             </div>
             <div className="grid gap-2 sm:flex sm:flex-wrap">

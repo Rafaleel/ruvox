@@ -24,7 +24,7 @@ export function ConfirmPanel({
       aria-labelledby={`${id}-title`}
       aria-describedby={`${id}-body`}
       onKeyDown={(e) => e.key === "Escape" && onCancel()}
-      className="mt-3 grid gap-2 rounded-card bg-danger-soft p-4 shadow-[inset_0_0_0_1px_var(--danger)]"
+      className="rise mt-1 grid gap-2 rounded-card border-l-[3px] border-danger bg-sheet-2 p-4 shadow-[inset_0_0_0_1px_var(--hairline)]"
     >
       <p id={`${id}-title`} className="font-semibold text-danger">
         {title}
