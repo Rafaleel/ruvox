@@ -94,15 +94,87 @@ fade, 180ms, stagger 40ms. Correct answer: a soft gold or green pulse; wrong: a 
 Everything respects `prefers-reduced-motion` (keep fades, drop movement). No animation on
 keyboard shortcuts or repeated taps of the same control.
 
-## Navigation
+## Navigation (v2: no sidebar)
 
-Mobile: bottom tab bar, 5 tabs with icons (Início, Jogar, Músicas, Progresso, Configurações),
-active tab shows an accent icon and a small notebook-margin tick above it, safe-area padding.
-Desktop (>= 768px): a left rail 248px wide with the wordmark "Ruvox" in Source Serif 4, the same
-five entries with icons, the streak stamp at the bottom. The page is never a floating component:
-there is always a header with the screen's title.
+See "Design v2" below: a floating dock at the bottom on every window size.
 
 ## Copy
 
 All UI text is Brazilian Portuguese, warm and direct ("Vamos praticar?"), no jargon. Russian
 shown with its approximate pronunciation, e.g. `Привет (pri-VIÉT)`.
+
+
+# Design v2 (owner feedback: below the expected standard; no sidebar; must scale with the window)
+
+Binding. Where this section and the earlier ones disagree, this section wins.
+
+## Window and scaling
+
+- The desktop window has a **minimum of 480x680 and no maximum** (maximize and full screen work).
+  Default 1100x780.
+- **The whole UI scales continuously with the window width.** Set a fluid root size, for example
+  `html { font-size: clamp(15px, 11px + 0.65vw, 21px); }`, and size EVERYTHING in `rem`/`em`/`%`
+  (padding, gaps, radii, icon size, control heights, max widths); `px` only for hairlines. Tailwind
+  spacing and type utilities are already `rem`, so they scale. Target: body about 16px near 480px
+  wide, about 18px at 1100px, about 20px from 1600px; verify at 480x680, 800x700, 1100x780,
+  1600x1000 and 2200x1200 that proportions hold (nothing tiny on a big window, nothing cramped on
+  a small one). Content max widths are in `rem` (reading column 40rem, wide layouts 68rem) and
+  content is centered with generous breathing room.
+- **Layouts compose to the window, not just stack.** Wide windows (>= about 60rem) use real
+  multi-column compositions (for example Home: hero on the left, alphabet map and stats on the
+  right; Play: modes grid beside a sticky summary), narrow windows stack. No wasted empty bands.
+
+## Navigation: the floating dock
+
+- No sidebar and no full-width tab bar. A **floating pill dock**, centered, fixed at the bottom
+  (`bottom: calc(1rem + env(safe-area-inset-bottom))`), the same on every window size.
+- Five items (Início, Jogar, Músicas, Progresso, Configurações), icon plus label. Below about
+  36rem the labels of inactive items collapse so only the active item shows its label. The active
+  item sits on an accent pill that slides between items (transform only).
+- Surface: sheet color at about 85% opacity with `backdrop-filter: blur`, hairline ring, layered
+  soft shadow. Hit targets at least 2.75rem. Keep `<nav aria-label="Navegação principal">` with
+  exactly five links, skip link, page titles.
+- A slim header at the top of every screen: the "Ruvox" wordmark (Source Serif 4) on the left, the
+  streak stamp on the right. Content gets bottom padding so the dock never covers it.
+- **The dock hides during a running session** (Quiz, Flashcard, Pairs, Result keeps it) so the
+  session is focused; provide a React context so the session screens can request it. Sticky action
+  bars inside sessions sit at the bottom edge.
+
+## Look: richer, more crafted
+
+The first pass was flat and template-like. Raise it with these concrete moves (all in the
+Caderno world, none decorative without meaning):
+
+1. **Atmosphere**: a very subtle paper grain over the page (inline SVG `feTurbulence` as a data
+   URI, opacity about 0.04 light and 0.06 dark) and a faint ruled-notebook line pattern behind
+   hero areas. Dark mode ("lousa") gets a soft vignette.
+2. **Illustration**: a small set of crisp line-art SVG components in `components/art/`, drawn with
+   the tokens (stroke `--ink-2`, accents in `--accent`/`--gold`): an onion-dome skyline for the
+   Home hero, a laurel for achievements, a postage-stamp frame, a notebook corner. Ghosted giant
+   Cyrillic letters (Я, Ж, Ш) as background watermarks at 4 to 6 percent opacity.
+3. **Signature: the alphabet map ("Mapa do alfabeto")**: all 33 letters as a tile grid grouped in
+   the three groups, each tile colored by mastery (`new` outlined, `learning` accent-soft,
+   `familiar` gold-soft, `mastered` solid success) with the letter in Source Serif 4. Data from
+   `GET /api/progress/letters` (`id`, `text`, `pronunciation`, `group`, `status`). It is the hero
+   data visualization on Home and on Progress, with a legend and a text alternative; tiles link to
+   the alphabet. This is what makes the product recognizable.
+4. **Hierarchy**: one focal element per screen with real scale contrast (display letters at
+   6 to 9rem on heroes and question cards, UI at 1rem), tighter tracking on display, weight and
+   color for secondary levels, tabular numbers.
+5. **Depth**: layered shadows and one raised level (cards) plus a floating level (dock, dialogs).
+   Gold used for streaks and achievements only, with a foil-like gradient (subtle) and a stamp
+   treatment.
+6. **Motion that feels good**: page entrance (rise + fade, stagger), dock pill slide, a
+   stamp-in (scale from 0.9 with a 2 degree rotation, 220ms) on a correct answer and on streak
+   updates, tile hover lift, number count-up under 600ms on Home stats. All transform/opacity,
+   under 300ms for interactions, `prefers-reduced-motion` respected.
+7. **Empty and first-run states are designed** (illustration, one clear action), not blank.
+8. **Details**: concentric radii, optical alignment, `tabular-nums`, `text-wrap: balance/pretty`,
+   focus rings, press feedback `scale(.97)`, consistent 4px grid.
+
+## Skills and critique
+
+Before building and before finishing, run the design skills available in the session
+(`interface-design`, `design-skills:design-elevation`, `better-typography`,
+`design-skills:interaction-design`, `design-skills:design-critique`) and apply what they flag.
+Judge every result from real screenshots at the five window sizes above in light and dark.

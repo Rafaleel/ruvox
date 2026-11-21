@@ -83,6 +83,14 @@ class ProgressOut(BaseModel):
     words_total: int
 
 
+class LetterStatus(BaseModel):
+    id: int
+    text: str
+    pronunciation: str
+    group: int
+    status: Literal["new", "learning", "familiar", "mastered"]
+
+
 class LLMTestOut(BaseModel):
     ok: bool
     message: str

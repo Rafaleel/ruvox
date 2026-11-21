@@ -106,6 +106,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/progress/letters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Letters
+         * @description Every alphabet letter with how well it is known (the alphabet map).
+         */
+        get: operations["letters_api_progress_letters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/settings": {
         parameters: {
             query?: never;
@@ -594,6 +614,22 @@ export interface components {
             /** Paired */
             paired: boolean;
         };
+        /** LetterStatus */
+        LetterStatus: {
+            /** Id */
+            id: number;
+            /** Text */
+            text: string;
+            /** Pronunciation */
+            pronunciation: string;
+            /** Group */
+            group: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "new" | "learning" | "familiar" | "mastered";
+        };
         /** MasteryOut */
         MasteryOut: {
             /** New */
@@ -1018,6 +1054,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProgressOut"];
+                };
+            };
+        };
+    };
+    letters_api_progress_letters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterStatus"][];
                 };
             };
         };

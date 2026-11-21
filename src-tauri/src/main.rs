@@ -156,7 +156,10 @@ fn main() {
                                 WebviewUrl::External(url),
                             )
                             .title("Ruvox")
-                            .inner_size(960.0, 720.0)
+                            .inner_size(1100.0, 780.0)
+                            // The UI scales with the window between this floor and any size
+                            // up to full screen; below the floor the layout would break.
+                            .min_inner_size(480.0, 680.0)
                             .build()
                             {
                                 Ok(_) => {
