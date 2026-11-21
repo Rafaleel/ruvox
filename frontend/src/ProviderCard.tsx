@@ -119,7 +119,13 @@ export function ProviderCard({
     test.reset();
     save.mutate(
       { providers: { [id]: { api_key: key } } },
-      { onSuccess: () => setKeyDraft("") },
+      {
+        onSuccess: () => {
+          setKeyDraft("");
+          // A refusal of the old, mistyped key no longer applies.
+          if (models.isError) models.reset();
+        },
+      },
     );
   };
   const removeKey = () => {
@@ -127,7 +133,12 @@ export function ProviderCard({
     test.reset();
     save.mutate(
       { providers: { [id]: { api_key: "" } } },
-      { onSuccess: () => models.reset() },
+      {
+        onSuccess: () => {
+          models.reset();
+          setChosen("");
+        },
+      },
     );
   };
 
@@ -254,6 +265,8 @@ export function ProviderCard({
               <Button
                 variant="secondary"
                 icon={ListRestart}
+                // Only Claude can list models without a key.
+                disabled={id !== "anthropic" && !has_key && !keyDraft.trim()}
                 loading={models.isPending}
                 onClick={() => models.mutate()}
               >
@@ -265,7 +278,10 @@ export function ProviderCard({
                 <Button
                   disabled={!selected || selected === model || save.isPending}
                   loading={saving("model")}
-                  onClick={() => patch({ model: selected })}
+                  onClick={() => {
+                    test.reset();
+                    patch({ model: selected });
+                  }}
                 >
                   Usar este modelo
                 </Button>
@@ -290,7 +306,10 @@ export function ProviderCard({
                 icon={Sparkles}
                 disabled={!!needs || save.isPending}
                 loading={saving("active")}
-                onClick={() => save.mutate({ active_provider: id })}
+                onClick={() => {
+                  test.reset();
+                  save.mutate({ active_provider: id });
+                }}
               >
                 Usar esta IA nas sessões
               </Button>
