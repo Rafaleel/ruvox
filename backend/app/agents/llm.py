@@ -1,7 +1,7 @@
 """The single seam between Ruvox and the LLM provider.
 
 Everything that needs a model goes through `StructuredLLM`. Tests use a fake; the app
-uses `AgnoLLM`. A missing key or any failure surfaces as `LLMUnavailable` so callers
+uses `AgnoLLM` (every provider goes through Agno). A missing key or any failure surfaces as `LLMUnavailable` so callers
 fall back to the no-LLM path (decision D11).
 """
 
@@ -10,15 +10,18 @@ import re
 import time
 from pathlib import Path
 from string import Template
-from typing import Protocol, TypeVar
+from typing import Any, Protocol, TypeVar
 
 from agno.agent import Agent
 from agno.models.anthropic import Claude
+from agno.models.groq import Groq
+from agno.models.openai import OpenAIChat
 from pydantic import BaseModel
 from sqlalchemy import Engine
 from sqlmodel import Session
 
-from app.config import Settings, effective_settings
+from app.agents.providers import PROVIDERS
+from app.config import effective_settings
 from app.models import LLMCall
 
 log = logging.getLogger("ruvox.llm")
@@ -105,68 +108,146 @@ def cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:
     return (input_tokens * price_in + output_tokens * price_out) / 1_000_000
 
 
+# Which structured-output mode worked for a (provider, model): False = the provider's
+# native structured output, True = JSON mode. Remembered so a failing mode is tried once.
+_working: dict[tuple[str, str], bool] = {}
+_STATUS = re.compile(r"error code: (\d{3})")
+_METHOD_WORDS = (
+    "not support", "unsupported", "response_format", "json_schema", "tool", "function", "schema",
+)  # fmt: skip
+
+
+def method_problem(detail: str) -> bool:
+    """Does this failure mean "this model cannot do that structured-output mode"?
+
+    A refused key, a rate limit, a missing model, a server error or a timeout would fail
+    the same way in the other mode, so they are never retried.
+    """
+    text = detail.lower()
+    found = _STATUS.search(text)
+    status = int(found[1]) if found else None
+    if status in (401, 403, 404, 408, 429) or (status is not None and status >= 500):
+        return False
+    if any(word in text for word in ("timeout", "timed out", "connect", "api key")):
+        return False
+    return status == 400 or any(word in text for word in _METHOD_WORDS)
+
+
+def build_model(
+    provider_id: str, api_key: str, model: str, base_url: str | None = None
+) -> Any:
+    """The Agno model for a provider. No sampling parameters: reasoning models reject them."""
+    if provider_id == "anthropic":
+        params: dict[str, Any] = {"max_retries": 0}
+        if base_url:
+            params["base_url"] = base_url
+        return Claude(
+            id=model,
+            api_key=api_key,
+            timeout=TIMEOUT_SECONDS,
+            max_tokens=MAX_TOKENS,
+            client_params=params,
+        )
+    if provider_id == "openai":
+        return OpenAIChat(
+            id=model,
+            api_key=api_key,
+            base_url=base_url or PROVIDERS["openai"].base_url,
+            timeout=TIMEOUT_SECONDS,
+            max_retries=0,
+            max_completion_tokens=MAX_TOKENS,
+        )
+    if provider_id == "groq":
+        return Groq(
+            id=model,
+            api_key=api_key,
+            base_url=base_url or PROVIDERS["groq"].base_url,
+            timeout=int(TIMEOUT_SECONDS),
+            max_retries=0,
+            max_tokens=MAX_TOKENS,
+        )
+    raise ValueError(f"unknown provider: {provider_id}")
+
+
 class AgnoLLM:
-    def __init__(self, engine: Engine, settings: Settings) -> None:
+    """Every provider runs through Agno: one library, one way to ask for a structure."""
+
+    def __init__(
+        self,
+        engine: Engine,
+        provider_id: str,
+        api_key: str,
+        model: str,
+        base_url: str | None = None,
+    ) -> None:
         self.engine = engine
-        self.settings = settings
-        self.key = settings.api_key.get_secret_value() if settings.api_key else None
+        self.provider_id = provider_id
+        self.key = api_key
+        self.model = model
+        self.base_url = base_url
+        self.label = PROVIDERS[provider_id].label
 
     def run(self, agent: str, prompt: str, user_input: str, schema: type[T]) -> T:
-        model = self.settings.model
         started = time.perf_counter()
-        input_tokens = output_tokens = 0
+        tokens_in = tokens_out = 0
         error = ""
         try:
-            runner = Agent(
-                model=Claude(
-                    id=model,
-                    api_key=self.settings.api_key.get_secret_value()
-                    if self.settings.api_key
-                    else None,
-                    timeout=TIMEOUT_SECONDS,
-                    max_tokens=MAX_TOKENS,
-                    client_params={"max_retries": 0},
-                ),
-                instructions=load_prompt(prompt),
-                output_schema=schema,
-            )
-            result = runner.run(user_input)
-            if result.metrics:
-                input_tokens = result.metrics.input_tokens
-                output_tokens = result.metrics.output_tokens
-            if not isinstance(result.content, schema):
-                # Agno returns an API failure as plain text in `content` (status error).
-                detail = (
-                    result.content
-                    if isinstance(result.content, str)
-                    else "the model did not return the expected structure"
-                )
-                raise LLMUnavailable(redact(detail, self.key))
-            return result.content
+            result, tokens_in, tokens_out = self._invoke(prompt, user_input, schema)
+            return result
         except LLMUnavailable as exc:
             error = str(exc)
             raise
         except Exception as exc:
             error = redact(f"{type(exc).__name__}: {exc}", self.key)[:300]
-            raise LLMUnavailable(error) from exc
+            raise LLMUnavailable(
+                error, friendly_error(error, self.label), self.label
+            ) from exc
         finally:
-            self._record(agent, model, input_tokens, output_tokens, started, error)
+            self._record(agent, tokens_in, tokens_out, started, error)
+
+    def _invoke(
+        self, prompt: str, user_input: str, schema: type[T]
+    ) -> tuple[T, int, int]:
+        key = (self.provider_id, self.model)
+        if key in _working:
+            modes = [_working[key]]
+        else:
+            modes = [False] if self.provider_id == "anthropic" else [False, True]
+        detail = "the model did not return the expected structure"
+        tokens = (0, 0)
+        for json_mode in modes:
+            runner = Agent(
+                model=build_model(
+                    self.provider_id, self.key, self.model, self.base_url
+                ),
+                instructions=load_prompt(prompt),
+                output_schema=schema,
+                use_json_mode=json_mode,
+            )
+            result = runner.run(user_input)
+            if result.metrics:
+                tokens = (result.metrics.input_tokens, result.metrics.output_tokens)
+            if isinstance(result.content, schema):
+                _working[key] = json_mode
+                return result.content, tokens[0], tokens[1]
+            # Agno returns an API failure as plain text in `content` (status error).
+            if isinstance(result.content, str):
+                detail = redact(result.content, self.key)
+            if not method_problem(detail):
+                break
+        raise LLMUnavailable(detail, friendly_error(detail, self.label), self.label)
 
     def _record(
-        self,
-        agent: str,
-        model: str,
-        tokens_in: int,
-        tokens_out: int,
-        started: float,
-        error: str,
+        self, agent: str, tokens_in: int, tokens_out: int, started: float, error: str
     ) -> None:
         latency_ms = round((time.perf_counter() - started) * 1000)
-        cost = cost_usd(model, tokens_in, tokens_out)
+        # Prices are only known for the Claude models in PRICES_PER_MTOK; others log cost 0.
+        cost = cost_usd(self.model, tokens_in, tokens_out)
         log.info(
-            "llm_call agent=%s model=%s in=%d out=%d latency_ms=%d cost_usd=%.6f ok=%s",
+            "llm_call provider=%s agent=%s model=%s in=%d out=%d latency_ms=%d cost_usd=%.6f ok=%s",
+            self.provider_id,
             agent,
-            model,
+            self.model,
             tokens_in,
             tokens_out,
             latency_ms,
@@ -177,7 +258,7 @@ class AgnoLLM:
             db.add(
                 LLMCall(
                     agent=agent,
-                    model=model,
+                    model=f"{self.provider_id}:{self.model}",
                     input_tokens=tokens_in,
                     output_tokens=tokens_out,
                     latency_ms=latency_ms,
@@ -197,12 +278,4 @@ def get_llm(engine: Engine, provider_id: str | None = None) -> StructuredLLM | N
     config = settings.provider(provider_id)
     if not config.api_key or not config.api_key.get_secret_value() or not config.model:
         return None
-    if provider_id == "anthropic":
-        return AgnoLLM(
-            engine, settings.model_copy(update={"active_provider": "anthropic"})
-        )
-    from app.agents.langchain_llm import LangChainLLM
-
-    return LangChainLLM(
-        engine, provider_id, config.api_key.get_secret_value(), config.model
-    )
+    return AgnoLLM(engine, provider_id, config.api_key.get_secret_value(), config.model)

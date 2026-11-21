@@ -1,4 +1,4 @@
-"""OpenAI and Groq through LangChain, against a fake chat-completions server on 127.0.0.1."""
+"""OpenAI and Groq through Agno, against a fake chat-completions server on 127.0.0.1."""
 
 import json
 import threading
@@ -11,8 +11,7 @@ from pydantic import SecretStr
 from sqlalchemy import Engine
 from sqlmodel import Session, select
 
-from app.agents import langchain_llm
-from app.agents.langchain_llm import LangChainLLM
+from app.agents import llm as llm_module
 from app.agents.llm import AgnoLLM, LLMUnavailable, Ping, get_llm
 from app.config import ProviderConfig, Settings, write_settings
 from app.models import LLMCall
@@ -81,14 +80,14 @@ def api(monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[FakeChatApi, str]]:
 
     server = HTTPServer(("127.0.0.1", 0), Handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
-    monkeypatch.setattr(langchain_llm, "_working", {})
+    monkeypatch.setattr(llm_module, "_working", {})
     yield state, f"http://127.0.0.1:{server.server_port}"
     server.shutdown()
 
 
-def llm(db: Session, provider: str, base: str, model: str = "model-x") -> LangChainLLM:
+def llm(db: Session, provider: str, base: str, model: str = "model-x") -> AgnoLLM:
     suffix = "/v1" if provider == "openai" else ""
-    return LangChainLLM(
+    return AgnoLLM(
         cast(Engine, db.get_bind()), provider, "key-123", model, base_url=base + suffix
     )
 
@@ -108,7 +107,10 @@ def test_openai_uses_json_schema_without_sampling_parameters(
     assert body["response_format"]["type"] == "json_schema"
     for forbidden in ("temperature", "top_p", "tools", "tool_choice"):
         assert forbidden not in body
-    assert [m["role"] for m in body["messages"]] == ["system", "user"]
+    assert [m["role"] for m in body["messages"]] in (
+        ["system", "user"],
+        ["developer", "user"],
+    )
     assert body["messages"][1]["content"] == "hello"
     (row,) = db.exec(select(LLMCall)).all()
     assert (row.model, row.input_tokens, row.output_tokens, row.ok) == (
@@ -133,28 +135,31 @@ def test_groq_goes_through_its_own_openai_compatible_path(
     assert body["model"] == "llama-test"
 
 
-def test_a_method_the_model_rejects_is_skipped_and_remembered(
+def test_a_mode_the_model_rejects_is_skipped_and_remembered(
     db: Session, api: tuple[FakeChatApi, str]
 ) -> None:
     state, base = api
 
     def picky(body: dict[str, Any]) -> tuple[int, dict[str, Any]]:
-        if "response_format" in body:
+        if body.get("response_format", {}).get("type") == "json_schema":
             return 400, {
                 "error": {
                     "message": "response_format json_schema is not supported by this model"
                 }
             }
-        return state.ok_tool(body)
+        return state.ok_json(body)
 
     state.respond = picky
-    model = llm(db, "groq", base, "tool-only-model")
+    model = llm(db, "openai", base, "json-mode-only")
     assert model.run("ping", "ping", "hi", Ping) == Ping(ok=True, message="pong")
-    assert len(state.requests) == 2 and "tools" in state.requests[1][2]
+    assert [r[2]["response_format"]["type"] for r in state.requests] == [
+        "json_schema",
+        "json_object",
+    ]
     model.run("ping", "ping", "hi again", Ping)
     assert (
         len(state.requests) == 3
-    )  # the working method is remembered: no new failed attempt
+    )  # the working mode is remembered: no new failed attempt
 
 
 def test_a_refused_key_becomes_a_clear_portuguese_message(
@@ -193,7 +198,7 @@ def test_get_llm_picks_the_implementation_for_the_active_provider(
         )
     )
     engine = cast(Engine, db.get_bind())
-    assert isinstance(get_llm(engine), LangChainLLM)
+    assert isinstance(get_llm(engine), AgnoLLM)
     assert isinstance(get_llm(engine, "anthropic"), AgnoLLM)
     assert get_llm(engine, "groq") is None  # a key without a chosen model stays offline
     monkeypatch.setenv("RUVOX_LLM_PROVIDER", "groq")

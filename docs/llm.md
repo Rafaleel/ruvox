@@ -8,11 +8,13 @@ offline mode: modes 1 to 4 work on seeded content and no model is called.
 
 Ruvox can use three providers; each key is labelled with the AI it belongs to:
 
-| Provider | Brand | Library | Key environment variable |
+| Provider | Brand | Agno model class | Key environment variable |
 | --- | --- | --- | --- |
-| Anthropic | Claude | Agno | `ANTHROPIC_API_KEY` |
-| OpenAI | ChatGPT | LangChain (`langchain-openai`) | `OPENAI_API_KEY` |
-| Groq | Groq | LangChain (`langchain-groq`) | `GROQ_API_KEY` |
+| Anthropic | Claude | `Claude` | `ANTHROPIC_API_KEY` |
+| OpenAI | ChatGPT | `OpenAIChat` | `OPENAI_API_KEY` |
+| Groq | Groq | `Groq` | `GROQ_API_KEY` |
+
+All three run through Agno (see ADR 0006).
 
 On the Settings screen you save a key per provider, choose the model from the list the
 provider itself returns for that key (names are never typed by hand), and pick which
@@ -23,7 +25,7 @@ override the active provider and its model. Settings saved by older versions (on
 and model) are read as the Anthropic provider.
 
 Adding another provider is one entry in `app/agents/providers.py` (name, models endpoint)
-and one branch in `build_chat_model` in `app/agents/langchain_llm.py`.
+and one branch in `build_model` in `app/agents/llm.py`.
 
 ## What gets called
 
@@ -45,7 +47,7 @@ ok, error) and one log line `llm_call agent=... latency_ms=... cost_usd=...`.
 Cost comes from `PRICES_PER_MTOK` in `llm.py` (USD per million tokens, first-party
 list prices, Claude only). Models that are not listed, including every OpenAI and Groq
 model, are logged with tokens and latency but cost 0: add a row once you know the price.
-The `model` column reads `provider:model` for LangChain providers.
+The `model` column reads `provider:model`.
 
 ```sql
 select agent, count(*), round(sum(cost_usd), 4), round(avg(latency_ms))

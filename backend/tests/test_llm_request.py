@@ -9,15 +9,14 @@ import json
 import threading
 from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Any
+from typing import Any, cast
 
 import pytest
-from pydantic import SecretStr
+from sqlalchemy import Engine
 from sqlmodel import Session
 
 from app.agents.corrector import Correction
 from app.agents.llm import AgnoLLM, Ping
-from app.config import ProviderConfig, Settings
 
 
 class FakeApi:
@@ -62,12 +61,7 @@ def api(monkeypatch: pytest.MonkeyPatch) -> Iterator[FakeApi]:
 
 
 def llm(db: Session, model: str = "claude-sonnet-5-5") -> AgnoLLM:
-    settings = Settings(
-        providers={
-            "anthropic": ProviderConfig(api_key=SecretStr("sk-test"), model=model)
-        }
-    )
-    return AgnoLLM(db.get_bind(), settings)  # type: ignore[arg-type]
+    return AgnoLLM(cast(Engine, db.get_bind()), "anthropic", "sk-test", model)
 
 
 def test_structured_output_uses_the_native_format_without_forbidden_parameters(

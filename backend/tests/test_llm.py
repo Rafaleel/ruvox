@@ -1,15 +1,14 @@
 import logging
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pytest
-from pydantic import SecretStr
+from sqlalchemy import Engine
 from sqlmodel import Session, select
 
 from app.agents import llm
 from app.agents.llm import AgnoLLM, LLMUnavailable, Ping, cost_usd, get_llm, load_prompt
-from app.config import ProviderConfig, Settings
 from app.models import LLMCall
 
 
@@ -27,14 +26,9 @@ class StubAgent:
         return self.result
 
 
-@pytest.fixture
-def settings() -> Settings:
-    return Settings(
-        providers={
-            "anthropic": ProviderConfig(
-                api_key=SecretStr("sk-test"), model="claude-sonnet-5-5"
-            )
-        }
+def claude(db: Session) -> AgnoLLM:
+    return AgnoLLM(
+        cast(Engine, db.get_bind()), "anthropic", "sk-test", "claude-sonnet-5-5"
     )
 
 
@@ -64,7 +58,6 @@ def test_cost_uses_the_price_table() -> None:
 
 def test_successful_call_is_logged_with_cost_and_latency(
     db: Session,
-    settings: Settings,
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -76,45 +69,49 @@ def test_successful_call_is_logged_with_cost_and_latency(
     monkeypatch.setattr(llm, "Agent", StubAgent)
     monkeypatch.setattr(llm, "Claude", lambda **_: object())
     caplog.set_level(logging.INFO, logger="ruvox.llm")
-    answer = AgnoLLM(db.get_bind(), settings).run("ping", "ping", "hello", Ping)  # type: ignore[arg-type]
+    answer = claude(db).run("ping", "ping", "hello", Ping)
     assert answer == Ping(ok=True, message="pong")
     (row,) = calls(db)
-    assert (row.agent, row.model, row.ok) == ("ping", "claude-sonnet-5-5", True)
+    assert (row.agent, row.model, row.ok) == (
+        "ping",
+        "anthropic:claude-sonnet-5-5",
+        True,
+    )
     assert (row.input_tokens, row.output_tokens) == (1000, 500)
     assert row.cost_usd == pytest.approx(0.007) and row.latency_ms >= 0
-    assert "llm_call agent=ping" in caplog.text
+    assert "llm_call provider=anthropic agent=ping" in caplog.text
 
 
 def test_api_failure_is_wrapped_and_recorded(
-    db: Session, settings: Settings, monkeypatch: pytest.MonkeyPatch
+    db: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     StubAgent.error = TimeoutError("slow")
     monkeypatch.setattr(llm, "Agent", StubAgent)
     monkeypatch.setattr(llm, "Claude", lambda **_: object())
     with pytest.raises(LLMUnavailable, match="TimeoutError"):
-        AgnoLLM(db.get_bind(), settings).run("ping", "ping", "hello", Ping)  # type: ignore[arg-type]
+        claude(db).run("ping", "ping", "hello", Ping)
     (row,) = calls(db)
     assert not row.ok and "TimeoutError" in row.error
 
 
 def test_wrong_structure_is_rejected(
-    db: Session, settings: Settings, monkeypatch: pytest.MonkeyPatch
+    db: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     StubAgent.error = None
     StubAgent.result = SimpleNamespace(content="plain text", metrics=None)
     monkeypatch.setattr(llm, "Agent", StubAgent)
     monkeypatch.setattr(llm, "Claude", lambda **_: object())
     with pytest.raises(LLMUnavailable, match="plain text"):
-        AgnoLLM(db.get_bind(), settings).run("ping", "ping", "hello", Ping)  # type: ignore[arg-type]
+        claude(db).run("ping", "ping", "hello", Ping)
 
 
 def test_no_key_means_offline_mode(
     db: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    assert get_llm(db.get_bind()) is None  # type: ignore[arg-type]
+    assert get_llm(cast(Engine, db.get_bind())) is None
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-env")
-    assert isinstance(get_llm(db.get_bind()), AgnoLLM)  # type: ignore[arg-type]
+    assert isinstance(get_llm(cast(Engine, db.get_bind())), AgnoLLM)
 
 
 # Anthropic structured outputs reject these JSON-schema keywords with a 400, which the
@@ -189,7 +186,7 @@ def test_long_model_output_is_trimmed_by_the_validators() -> None:
 
 
 def test_a_rejected_key_gets_a_clear_portuguese_message(
-    db: Session, settings: Settings, monkeypatch: pytest.MonkeyPatch
+    db: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     StubAgent.error = None
     # Agno hands an API failure back as text in `content` instead of raising.
@@ -200,7 +197,7 @@ def test_a_rejected_key_gets_a_clear_portuguese_message(
     monkeypatch.setattr(llm, "Agent", StubAgent)
     monkeypatch.setattr(llm, "Claude", lambda **_: object())
     with pytest.raises(LLMUnavailable) as caught:
-        AgnoLLM(db.get_bind(), settings).run("ping", "ping", "hello", Ping)  # type: ignore[arg-type]
+        claude(db).run("ping", "ping", "hello", Ping)
     assert "chave da API foi recusada" in caught.value.user_message
     assert "401" in str(caught.value)  # the raw detail is kept for the log
 
