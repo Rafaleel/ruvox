@@ -99,7 +99,7 @@ def test_rejections(client: TestClient) -> None:
 
 
 def test_validation_and_empty_modes(client: TestClient) -> None:
-    assert client.post("/api/sessions", json={"mode": 8}).status_code == 422
+    assert client.post("/api/sessions", json={"mode": 9}).status_code == 422
     assert client.post("/api/sessions", json={"size": 2}).status_code == 422
     assert client.post("/api/sessions", json={"mode": 3}).status_code == 409
 

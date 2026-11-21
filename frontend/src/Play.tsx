@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Check,
   Keyboard,
+  Languages,
   Layers,
   Link2,
   Music2,
@@ -43,6 +44,12 @@ const MODES: {
     mode: "mixed",
     icon: Shuffle,
     description: "Um pouco de tudo: letras, sons e palavras na mesma sessão.",
+  },
+  {
+    label: "Alfabeto",
+    mode: 8,
+    icon: Languages,
+    description: "Só as letras: leia cada uma e ache o som certo.",
   },
   {
     label: "Digitação",

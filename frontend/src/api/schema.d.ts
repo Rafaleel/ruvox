@@ -749,7 +749,7 @@ export interface components {
              * @default mixed
              * @enum {unknown}
              */
-            mode: "mixed" | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+            mode: "mixed" | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
             /** Song Id */
             song_id?: number | null;
             /**

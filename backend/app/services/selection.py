@@ -42,20 +42,27 @@ class SeedContentPlanner:
         clock: Callable[[], datetime] = now_utc,
         song_id: int | None = None,
         require_excerpt: bool = False,
+        letters_only: bool = False,
     ) -> None:
         self.session = session
         self.clock = clock
         self.song_id = song_id  # when set, practice only this song's items
         self.require_excerpt = require_excerpt  # cloze needs a phrase to blank out
+        self.letters_only = letters_only  # the alphabet game
 
     def select(self, user_id: int, size: int) -> list[PlannedItem]:
         query = select(Item).where(Item.user_id == user_id).order_by(col(Item.id))
         if self.song_id is not None:
             query = query.where(Item.song_id == self.song_id)
+        # Song vocabulary only shows up when practicing a song (or the cloze mode,
+        # which needs the excerpts); general sessions stay on the alphabet and seed words.
+        general = self.song_id is None and not self.require_excerpt
         items = [
             item
             for item in self.session.exec(query).all()
-            if item.excerpt or not self.require_excerpt
+            if (item.excerpt or not self.require_excerpt)
+            and not (general and item.source == "song")
+            and (item.kind == "letter" or not self.letters_only)
         ]
         states = {
             state.item_id: state

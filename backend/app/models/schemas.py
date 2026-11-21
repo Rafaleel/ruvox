@@ -26,7 +26,7 @@ class QuestionOut(BaseModel):
 
 
 class SessionCreate(BaseModel):
-    mode: Literal["mixed", 1, 2, 3, 4, 5, 6, 7] = "mixed"
+    mode: Literal["mixed", 1, 2, 3, 4, 5, 6, 7, 8] = "mixed"
     song_id: int | None = None  # practice only the vocabulary of this song
     size: int = Field(default=10, ge=5, le=20)
 

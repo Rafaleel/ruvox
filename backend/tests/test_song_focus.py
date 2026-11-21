@@ -51,8 +51,8 @@ def test_song_session_only_uses_that_songs_words(client: TestClient) -> None:
     assert "кота" in prompts and "звезда" not in prompts
     other = client.post("/api/sessions", json={"size": 5, "song_id": second}).json()
     assert {q["prompt"] for q in other["questions"]} == {
-        "O que significa «звезда»?",
-        "O que significa «река»?",
+        "O que significa «звезда» (pro-nun-si-A)?",
+        "O que significa «река» (pro-nun-si-A)?",
     }
 
 
@@ -65,15 +65,14 @@ def test_song_without_items_has_nothing_to_practice(client: TestClient) -> None:
     assert client.post("/api/sessions", json={"song_id": song_id}).status_code == 409
 
 
-def test_song_items_take_at_most_half_of_a_general_session(
-    client: TestClient, db: Session
-) -> None:
+def test_general_sessions_leave_song_words_out(client: TestClient, db: Session) -> None:
     save_song(client, WORDS)  # six song items, all due immediately
     with Session(client.app.state.engine) as session:  # type: ignore[attr-defined]
         picked = SeedContentPlanner(session).select(1, 10)
-    song = [p for p in picked if p.item.source == "song"]
-    assert len(song) == 5 and len(picked) == 10
-    assert any(p.item.kind == "letter" and p.is_new for p in picked)
+    assert picked and all(p.item.source != "song" for p in picked)
+    with Session(client.app.state.engine) as session:  # type: ignore[attr-defined]
+        song_only = SeedContentPlanner(session, song_id=1).select(1, 10)
+    assert song_only and all(p.item.source == "song" for p in song_only)
 
 
 def test_song_words_never_block_progress_unlocking(client: TestClient) -> None:

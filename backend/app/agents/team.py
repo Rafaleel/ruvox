@@ -52,7 +52,7 @@ class SessionTeam:
         self, user_id: int, size: int, mode: int | None, song_id: int | None = None
     ) -> PreparedSession:
         seed_planner = SeedContentPlanner(
-            self.db, song_id=song_id, require_excerpt=mode == 7
+            self.db, song_id=song_id, require_excerpt=mode == 7, letters_only=mode == 8
         )
         seed_generator = SeedQuestionGenerator(self.db, self.rng)
         # Flashcards, pairs and cloze never use the model: no key, no cost, no waiting.

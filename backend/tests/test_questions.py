@@ -34,7 +34,8 @@ def test_prompts_and_explanations_follow_the_spec(db: Session) -> None:
     }
     assert by_type["letter_to_sound"].prompt == "Como se lê «Ч»?"
     assert by_type["letter_to_sound"].explanation.startswith("Ч lê-se tch")
-    assert by_type["word_to_meaning"].prompt == "O que significa «банан»?"
+    assert by_type["word_to_meaning"].prompt == "O que significa «банан» (ba-NÁN)?"
+    assert "Letra por letra: б = " in by_type["word_to_meaning"].explanation
     assert by_type["word_to_meaning"].answer == "banana"
 
 
@@ -85,3 +86,9 @@ def test_typing_is_never_part_of_a_mixed_session(db: Session) -> None:
 def test_stress_marks_are_ignored() -> None:
     assert answers_match("банан", "бана́н", typed=True)
     assert answers_match("й", "Й", typed=True)
+
+
+def test_alphabet_mode_only_asks_about_letters(db: Session) -> None:
+    plan = plan_of(db, "А", "К", "М", "банан")
+    drafts = generator(db).generate(plan, 10, mode=8)
+    assert {q.type for q in drafts} == {"letter_to_sound", "sound_to_letter"}
