@@ -202,7 +202,7 @@
 
 /* Entrance: 8px rise and fade; set `style={{ "--i": n }}` to stagger by 40ms. */
 .rise {
-  animation: rise 180ms var(--ease-out-soft) both;
+  animation: rise 180ms var(--ease-out-soft) backwards;
   animation-delay: calc(var(--i, 0) * 40ms);
 }
 .shake {
@@ -213,12 +213,12 @@
 }
 /* A rubber stamp landing: scale from .9 with a 2 degree twist, 220ms. */
 .stamp-in {
-  animation: stamp-in 220ms var(--ease-out-soft) both;
+  animation: stamp-in 220ms var(--ease-out-soft) backwards;
   animation-delay: calc(var(--i, 0) * 40ms);
 }
 /* Whole-page entrance, set on the keyed wrapper in Layout. */
 .page-in {
-  animation: rise 220ms var(--ease-out-soft) both;
+  animation: rise 220ms var(--ease-out-soft) backwards;
 }
 /* Tile and card hover: a small lift with a pointer, press feedback everywhere. */
 .lift {

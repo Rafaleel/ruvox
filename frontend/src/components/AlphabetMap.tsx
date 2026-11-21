@@ -221,7 +221,7 @@ export function AlphabetMap({
                 <p className="flex items-center gap-3 text-sm text-ink-2">
                   <span
                     lang="ru"
-                    className="font-serif text-2xl font-semibold text-ink"
+                    className="shrink-0 font-serif text-2xl font-semibold whitespace-nowrap text-ink"
                   >
                     {active.text} {active.text.toLowerCase()}
                   </span>

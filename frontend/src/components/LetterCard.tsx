@@ -12,6 +12,7 @@ export function LetterCard({
   size = "md",
   status,
   id,
+  highlighted = false,
   className,
 }: {
   /** Upper case letter; the lower case is derived. */
@@ -20,6 +21,8 @@ export function LetterCard({
   size?: "md" | "lg";
   status?: Mastery;
   id?: string;
+  /** Ringed in the accent, for the letter a link pointed at. */
+  highlighted?: boolean;
   className?: string;
 }) {
   const meta = status ? MASTERY_META[status] : null;
@@ -27,7 +30,8 @@ export function LetterCard({
     <div
       id={id}
       className={cx(
-        "@container relative flex scroll-mt-6 flex-col items-center gap-3 overflow-hidden rounded-card bg-sheet px-3 pt-4 pb-4 text-center shadow-card transition-shadow duration-300 target:shadow-[0_0_0_2px_var(--accent)]",
+        "@container relative flex scroll-mt-6 flex-col items-center gap-3 overflow-hidden rounded-card bg-sheet px-3 pt-4 pb-4 text-center shadow-card",
+        highlighted && "ring-2 ring-accent",
         className,
       )}
     >

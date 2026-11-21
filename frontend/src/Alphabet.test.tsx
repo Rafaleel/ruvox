@@ -57,6 +57,7 @@ it("shows each letter's mastery as a word and a ring per group", async () => {
   await screen.findAllByRole("listitem");
   const card = document.getElementById("letra-1")!;
   expect(scroll).toHaveBeenCalled();
+  expect(card.className).toContain("ring-accent");
   expect(within(card).getByText("dominada")).toBeTruthy();
   expect(within(card).getByText("som 1")).toBeTruthy();
   expect(

@@ -90,6 +90,7 @@ export function Alphabet() {
                   <li key={letter.id}>
                     <LetterCard
                       id={`letra-${letter.id}`}
+                      highlighted={hash === `#letra-${letter.id}`}
                       letter={letter.text}
                       pronunciation={letter.pronunciation}
                       status={status.get(letter.id)}
