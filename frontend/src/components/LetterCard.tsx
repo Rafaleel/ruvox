@@ -29,8 +29,9 @@ export function LetterCard({
   return (
     <div
       id={id}
+      tabIndex={id ? -1 : undefined}
       className={cx(
-        "@container relative flex scroll-mt-6 flex-col items-center gap-3 overflow-hidden rounded-card bg-sheet px-3 pt-4 pb-4 text-center shadow-card",
+        "@container relative flex outline-none scroll-mt-6 flex-col items-center gap-3 overflow-hidden rounded-card bg-sheet px-3 pt-4 pb-4 text-center shadow-card",
         highlighted && "ring-2 ring-accent",
         className,
       )}

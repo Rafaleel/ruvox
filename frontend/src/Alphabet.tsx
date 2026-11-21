@@ -24,8 +24,11 @@ export function Alphabet() {
   const { hash } = useLocation();
   const loaded = !!letters.data;
   useEffect(() => {
-    if (loaded && hash)
-      document.getElementById(hash.slice(1))?.scrollIntoView();
+    if (!loaded || !hash) return;
+    const card = document.getElementById(hash.slice(1));
+    card?.scrollIntoView();
+    // Move focus too, so keyboard and screen reader users land on the letter.
+    card?.focus({ preventScroll: true });
   }, [loaded, hash]);
 
   return (
