@@ -234,7 +234,15 @@ export function Play() {
           ))}
         </div>
       </fieldset>
-      <div className="sticky bottom-20 z-[5] -mx-5 mt-8 bg-linear-to-t from-paper from-70% to-transparent px-5 pt-6 pb-2 md:static md:mx-0 md:bg-none md:p-0">
+      <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[5] -mx-5 mt-8 bg-linear-to-t from-paper from-70% to-transparent px-5 pt-6 pb-2 md:static md:mx-0 md:bg-none md:p-0">
+        {start.isError && (
+          <div className="mb-3">
+            <ErrorMessage
+              error={start.error}
+              onRetry={() => start.mutate(request)}
+            />
+          </div>
+        )}
         <Button
           size="lg"
           icon={PlayIcon}
@@ -245,14 +253,6 @@ export function Play() {
           {start.isPending ? "Começando…" : "Começar"}
         </Button>
       </div>
-      {start.isError && (
-        <div className="mt-4">
-          <ErrorMessage
-            error={start.error}
-            onRetry={() => start.mutate(request)}
-          />
-        </div>
-      )}
     </>
   );
 }

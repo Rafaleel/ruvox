@@ -51,7 +51,7 @@ const heroClass = (text: string) =>
 
 // On phones the next action floats just above the tab bar.
 const stickyBar =
-  "sticky bottom-20 z-[5] -mx-5 mt-4 bg-linear-to-t from-paper from-70% to-transparent px-5 pt-6 pb-2 md:bottom-4 md:mx-0 md:bg-none md:p-0";
+  "sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[5] -mx-5 mt-4 bg-linear-to-t from-paper from-70% to-transparent px-5 pt-6 pb-2 md:bottom-4 md:mx-0 md:bg-none md:p-0";
 
 export function Quiz({
   session,
