@@ -57,7 +57,7 @@ const plural = (n: number, one: string, many: string) =>
 /** "2026-03-07" -> "07/03" */
 const shortDate = (iso: string) => iso.slice(8) + "/" + iso.slice(5, 7);
 
-const panel = "rounded-sheet bg-sheet p-5 shadow-card @[32rem]:p-6";
+const panel = "@container rounded-sheet bg-sheet p-5 shadow-card @[32rem]:p-6";
 
 function Mastery({ mastery }: { mastery: Stats["mastery"] }) {
   const total = MASTERY.reduce((sum, m) => sum + mastery[m.key], 0);
@@ -374,7 +374,7 @@ export function Progress() {
         </div>
       )}
       {data && (
-        <div className="@container mt-8 grid gap-6 @[50rem]:grid-cols-12 @[50rem]:content-start @[50rem]:gap-8">
+        <div className="@container mt-8 grid gap-6 @[50rem]:grid-cols-12 @[50rem]:grid-rows-[auto_1fr] @[50rem]:gap-8">
           <div
             className="rise @[50rem]:col-span-5 @[50rem]:col-start-8 @[50rem]:row-start-1"
             style={stagger(0)}
@@ -393,7 +393,7 @@ export function Progress() {
                 aria-labelledby="mastery-title"
                 className={cx(
                   panel,
-                  "rise @[50rem]:col-span-5 @[50rem]:col-start-8 @[50rem]:row-start-2",
+                  "rise @[50rem]:col-span-5 @[50rem]:col-start-8 @[50rem]:row-start-2 @[50rem]:self-start",
                 )}
                 style={stagger(2)}
               >
