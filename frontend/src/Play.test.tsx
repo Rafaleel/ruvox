@@ -97,7 +97,7 @@ it("plays a session: start, answer, requeue, finish, result", async () => {
     });
 
   renderPlay();
-  fireEvent.click(screen.getByLabelText("5"));
+  fireEvent.click(screen.getByRole("radio", { name: "5" }));
   fireEvent.click(screen.getByRole("button", { name: "Começar" }));
 
   // Q1: the answer is not on screen before answering.

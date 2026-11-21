@@ -154,7 +154,7 @@ it("reviews an analysis and sends only the selected entries", async () => {
 
   fireEvent.click(boxes[1]);
   expect(screen.getByText("1 de 2 selecionadas")).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Salvar selecionadas" }));
+  fireEvent.click(screen.getByRole("button", { name: /Salvar selecionadas/ }));
 
   expect(await screen.findByText("1 palavra adicionada")).toBeTruthy();
   expect(bodyOf("POST", "/api/songs/3/confirm")).toEqual({

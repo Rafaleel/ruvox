@@ -1,19 +1,28 @@
+import { Sparkles, WifiOff } from "lucide-react";
 import type { Session } from "../api/client";
+import { Badge } from "./Badge";
 
 const BADGES = {
-  ai: { label: "IA", hint: "Perguntas geradas pela IA" },
-  offline: { label: "Offline", hint: "Perguntas do conteúdo local, sem IA" },
+  ai: {
+    label: "IA",
+    hint: "Perguntas geradas pela IA",
+    tone: "gold",
+    icon: Sparkles,
+  },
+  offline: {
+    label: "Offline",
+    hint: "Perguntas do conteúdo local, sem IA",
+    tone: "neutral",
+    icon: WifiOff,
+  },
 } as const;
 
 export function SourceBadge({ source }: { source: Session["source"] }) {
-  const { label, hint } = BADGES[source];
+  const { label, hint, tone, icon } = BADGES[source];
   return (
-    <span
-      title={hint}
-      className="rounded-full border border-line bg-surface px-2 py-0.5 text-xs font-semibold text-muted"
-    >
+    <Badge tone={tone} icon={icon} title={hint}>
       {label}
       <span className="sr-only">: {hint}</span>
-    </span>
+    </Badge>
   );
 }
