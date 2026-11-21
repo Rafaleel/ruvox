@@ -40,6 +40,7 @@ it("renders 33 letters grouped under the three titles", async () => {
     name: /Grupo 3/,
   }).parentElement!;
   expect(within(group3).getAllByRole("listitem")).toHaveLength(20);
-  expect(within(group3).getByText("Ч ч")).toBeTruthy();
+  expect(within(group3).getByText("Ч")).toBeTruthy();
+  expect(within(group3).getByText("ч")).toBeTruthy();
   expect(within(group3).getByText("som 24")).toBeTruthy();
 });

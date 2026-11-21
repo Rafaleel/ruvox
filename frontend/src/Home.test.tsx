@@ -25,7 +25,9 @@ it.each([
       "/api/progress": progress,
     });
     renderWithProviders(<Home />);
-    expect(screen.getByRole("heading", { name: "Ruvox" })).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: "Vamos praticar?" }),
+    ).toBeTruthy();
     expect(await screen.findByText(message)).toBeTruthy();
   },
 );
@@ -34,19 +36,40 @@ it("shows due count, group progress and words unlocked", async () => {
   mockFetch({ "/api/health": { status: "ok" }, "/api/progress": progress });
   renderWithProviders(<Home />);
 
-  expect(
-    await screen.findByText("para revisar agora", { exact: false }),
-  ).toBeTruthy();
+  expect(await screen.findByText("Para revisar")).toBeTruthy();
   expect(screen.getByText("3")).toBeTruthy();
-  expect(screen.getByText("2/5")).toBeTruthy();
-  expect(screen.getByText("0/8")).toBeTruthy();
-  expect(screen.getByText("1/20")).toBeTruthy();
-  expect(screen.getByText("12/40")).toBeTruthy();
-  const bar = screen.getByRole("progressbar", { name: "Grupo 1" });
-  expect(bar.getAttribute("aria-valuenow")).toBe("2");
+  expect(screen.getByText("itens agora")).toBeTruthy();
+  expect(
+    screen.getByRole("img", { name: "Grupo 1: 2 de 5 letras" }),
+  ).toBeTruthy();
+  expect(
+    screen.getByRole("img", { name: "Grupo 2: 0 de 8 letras" }),
+  ).toBeTruthy();
+  expect(
+    screen.getByRole("img", { name: "Grupo 3: 1 de 20 letras" }),
+  ).toBeTruthy();
+  expect(screen.getByText("12")).toBeTruthy();
+  expect(screen.getByText("de 40 liberadas")).toBeTruthy();
   expect(
     screen.getByRole("link", { name: "Jogar agora" }).getAttribute("href"),
   ).toBe("/play");
+});
+
+it("invites a first-time learner to start and hides the empty stats", async () => {
+  mockFetch({
+    "/api/health": { status: "ok" },
+    "/api/progress": {
+      ...progress,
+      due_count: 0,
+      groups: progress.groups.map((g) => ({ ...g, learned: 0 })),
+      words_unlocked: 0,
+    },
+    "/api/stats": { ...stats, streak: 0 },
+  });
+  renderWithProviders(<Home />);
+  expect(await screen.findByText(/Sua primeira sessão/)).toBeTruthy();
+  expect(screen.queryByText("Para revisar")).toBeNull();
+  expect(screen.getByRole("link", { name: "Jogar agora" })).toBeTruthy();
 });
 
 it("shows the streak badge and a visible alphabet link", async () => {

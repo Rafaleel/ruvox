@@ -1,12 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { getItems } from "./api/client";
-import { Card } from "./components/Card";
 import { ErrorMessage } from "./components/ErrorMessage";
+import { LetterCard } from "./components/LetterCard";
+import { stagger } from "./components/motion";
+import { PageHeader } from "./components/PageHeader";
 
-const GROUP_TITLES: Record<number, string> = {
-  1: "Grupo 1: iguais ao português",
-  2: "Grupo 2: parecem latinas, mas soam diferente",
-  3: "Grupo 3: letras novas",
+const GROUPS: Record<number, { title: string; description: string }> = {
+  1: {
+    title: "Grupo 1: iguais ao português",
+    description: "Você já conhece a forma e o som. Comece por aqui.",
+  },
+  2: {
+    title: "Grupo 2: parecem latinas, mas soam diferente",
+    description: "Cuidado: a forma engana. O som é outro.",
+  },
+  3: {
+    title: "Grupo 3: letras novas",
+    description: "Formas que você ainda não viu. Uma de cada vez.",
+  },
 };
 
 export function Alphabet() {
@@ -17,33 +28,39 @@ export function Alphabet() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold">Alfabeto</h1>
-      {letters.isPending && <p className="mt-4 text-muted">Carregando…</p>}
+      <PageHeader
+        eyebrow="Consulta"
+        title="Alfabeto"
+        description="As 33 letras russas, em maiúscula e minúscula, com o som aproximado em português."
+      />
+      {letters.isPending && <p className="mt-6 text-ink-2">Carregando…</p>}
       {letters.isError && (
-        <div className="mt-4">
+        <div className="mt-6">
           <ErrorMessage
             error={letters.error}
             onRetry={() => letters.refetch()}
           />
         </div>
       )}
-      {Object.entries(GROUP_TITLES).map(([group, title]) => {
+      {Object.entries(GROUPS).map(([group, { title, description }], index) => {
         const members = letters.data?.filter((l) => l.group === Number(group));
         if (!members?.length) return null;
         return (
-          <section key={group} className="mt-6">
-            <h2 className="text-lg font-bold">{title}</h2>
-            <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <section
+            key={group}
+            className="rise mt-10"
+            style={stagger(index + 1)}
+          >
+            <h2>{title}</h2>
+            <p className="mt-1 text-ink-2">{description}</p>
+            <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
               {members.map((letter) => (
                 <li key={letter.id}>
-                  <Card className="h-full">
-                    <p lang="ru" className="text-4xl font-extrabold">
-                      {letter.text} {letter.text.toLowerCase()}
-                    </p>
-                    <p className="mt-1 text-sm text-muted">
-                      {letter.pronunciation}
-                    </p>
-                  </Card>
+                  <LetterCard
+                    letter={letter.text}
+                    pronunciation={letter.pronunciation}
+                    className="h-full"
+                  />
                 </li>
               ))}
             </ul>
