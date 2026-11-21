@@ -23,14 +23,14 @@ export function LetterCard({
       <p
         lang="ru"
         className={cx(
-          "font-serif leading-none font-semibold text-ink",
-          size === "lg" ? "text-letter-hero" : "text-letter",
+          "font-serif leading-none font-semibold whitespace-nowrap text-ink",
+          size === "lg" ? "text-letter-hero" : "text-[3.5rem]",
         )}
       >
         <span>{letter}</span>{" "}
         <span className="font-normal text-ink-2">{letter.toLowerCase()}</span>
       </p>
-      <p className="rounded-full bg-sheet-2 px-2.5 py-0.5 text-sm font-medium text-ink-2">
+      <p className="rounded-control bg-sheet-2 px-2.5 py-1 text-sm leading-snug font-medium text-ink-2">
         {pronunciation}
       </p>
     </div>

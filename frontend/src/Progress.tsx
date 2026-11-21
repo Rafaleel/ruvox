@@ -130,7 +130,7 @@ function ActivityChart({ days }: { days: Stats["days"] }) {
                   width={BAR}
                   height={all}
                   fill="var(--accent)"
-                  opacity={0.3}
+                  opacity={0.4}
                 />
               )}
               {d.correct > 0 && (
@@ -159,7 +159,7 @@ function ActivityChart({ days }: { days: Stats["days"] }) {
         <li className="flex items-center gap-2">
           <span
             aria-hidden="true"
-            className="size-3 rounded-sm bg-accent opacity-30"
+            className="size-3 rounded-sm bg-accent opacity-40"
           />
           Respostas
         </li>

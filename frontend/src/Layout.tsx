@@ -87,7 +87,7 @@ export function Layout() {
               to={to}
               end={end}
               className={({ isActive }) =>
-                `relative flex min-h-16 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-control text-[0.6875rem] font-medium tracking-tight transition-colors before:absolute before:top-0 before:left-1/2 before:h-0.5 before:w-8 before:-translate-x-1/2 before:rounded-full before:content-[''] md:min-h-11 md:flex-none md:flex-row md:justify-start md:gap-3 md:px-3 md:text-base md:tracking-normal md:before:top-1/2 md:before:left-0 md:before:h-5 md:before:w-0.5 md:before:translate-x-0 md:before:-translate-y-1/2 ${
+                `relative flex min-h-16 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-control text-[0.65rem] font-medium tracking-tight min-[400px]:text-[0.6875rem] transition-colors before:absolute before:top-0 before:left-1/2 before:h-0.5 before:w-8 before:-translate-x-1/2 before:rounded-full before:content-[''] md:min-h-11 md:flex-none md:flex-row md:justify-start md:gap-3 md:px-3 md:text-base md:tracking-normal md:before:top-1/2 md:before:left-0 md:before:h-5 md:before:w-0.5 md:before:translate-x-0 md:before:-translate-y-1/2 ${
                   isActive
                     ? "text-ink before:bg-accent md:bg-sheet-2"
                     : "text-ink-3 hover:text-ink"
