@@ -24,7 +24,7 @@ const tileClass = (state: Tile) =>
     state === "idle" &&
       "bg-sheet text-ink shadow-card hover:-translate-y-px active:scale-[.97]",
     state === "picked" &&
-      "-translate-y-px bg-sheet text-ink shadow-[0_0_0_2px_var(--accent),0_6px_14px_-8px_rgba(27,36,51,.3)]",
+      "-translate-y-px bg-sheet text-ink shadow-[0_0_0_2px_var(--accent)]",
     state === "matched" &&
       "bg-success-soft text-success shadow-[0_0_0_1px_var(--success)]",
     state === "wrong" &&

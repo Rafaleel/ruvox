@@ -36,7 +36,7 @@ export function Flashcard({
             showBack && "rotate-y-180",
           )}
         >
-          <div className={face}>
+          <div className={face} aria-hidden={showBack || undefined}>
             <div>
               <p
                 lang="ru"

@@ -441,7 +441,7 @@ function Review({
           />
         </div>
       )}
-      <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[5] mt-6 grid grid-cols-2 items-center gap-x-3 gap-y-2 rounded-card bg-sheet p-3 shadow-[0_0_0_1px_var(--hairline),0_8px_24px_-8px_rgba(27,36,51,.28)] sm:grid-cols-[1fr_auto_auto] sm:pl-4 md:bottom-4">
+      <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[5] mt-6 grid grid-cols-2 items-center gap-x-3 gap-y-2 rounded-card bg-sheet p-3 shadow-card sm:grid-cols-[1fr_auto_auto] sm:pl-4 md:bottom-4">
         <p aria-live="polite" className="font-semibold">
           {selected.size} de {newCount} selecionadas
         </p>

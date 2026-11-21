@@ -294,7 +294,7 @@ export function Quiz({
                     "group flex min-h-14 w-full items-center gap-3 rounded-card px-3 py-2.5 text-left",
                     "transition-[transform,box-shadow,background-color] duration-150 ease-out-soft",
                     !feedback &&
-                      "bg-sheet text-ink shadow-card hover:-translate-y-px hover:shadow-[0_0_0_1px_var(--rule),0_6px_16px_-8px_rgba(27,36,51,.18)] active:scale-[.98] disabled:pointer-events-none",
+                      "bg-sheet text-ink shadow-card hover:-translate-y-px hover:shadow-[0_0_0_1px_var(--rule)] active:scale-[.98] disabled:pointer-events-none",
                     right &&
                       cx(
                         "bg-success-soft text-success shadow-[0_0_0_2px_var(--success)]",
