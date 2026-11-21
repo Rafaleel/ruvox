@@ -64,7 +64,7 @@ export function Flashcard({
                 >
                   {question.prompt}
                 </p>
-                <p className="mt-5 text-xl leading-snug font-semibold text-ink">
+                <p className="mt-5 text-2xl leading-snug font-semibold text-ink">
                   {question.reveal}
                 </p>
               </div>
@@ -76,14 +76,14 @@ export function Flashcard({
         <Button
           size="lg"
           icon={RotateCw}
-          className="mt-4 w-full"
+          className="mt-4 w-full md:mx-auto md:flex md:w-72"
           onClick={() => setFlipped(true)}
         >
           Virar
         </Button>
       )}
       {flipped && !done && (
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-2 gap-3 md:mx-auto md:max-w-md">
           <button
             type="button"
             disabled={disabled}

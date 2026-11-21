@@ -70,19 +70,19 @@ export function Result({
           <ul className="grid gap-3 sm:grid-cols-2">
             {result.items_to_review.map((item, i) => (
               <li key={item.id} className="rise" style={stagger(i + 2)}>
-                <Card className="flex h-full items-center gap-4 p-4">
-                  <span
+                <Card className="h-full p-4">
+                  <p
                     lang="ru"
-                    className="min-w-14 font-serif text-4xl leading-none font-semibold break-words text-ink"
+                    className="font-serif text-3xl leading-tight font-semibold break-words text-ink"
                   >
                     {item.text}
-                  </span>
-                  <span className="grid min-w-0 gap-1.5">
-                    <span className="w-fit rounded-control bg-sheet-2 px-2.5 py-0.5 text-sm font-medium text-ink-2">
+                  </p>
+                  <p className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                    <span className="rounded-control bg-sheet-2 px-2.5 py-0.5 text-sm font-medium text-ink-2">
                       ({item.pronunciation})
                     </span>
                     <span className="leading-snug">{item.meaning}</span>
-                  </span>
+                  </p>
                 </Card>
               </li>
             ))}

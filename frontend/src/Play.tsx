@@ -126,8 +126,8 @@ function ModeCard({
           {hint && (
             <>
               {" "}
-              <span className="mt-1 flex items-center gap-1 font-medium text-gold-ink">
-                <Icon icon={Music2} size={14} className="shrink-0" />
+              <span className="mt-1 flex items-start gap-1 font-medium text-gold-ink">
+                <Icon icon={Music2} size={14} className="mt-1 shrink-0" />
                 {hint}
               </span>
             </>

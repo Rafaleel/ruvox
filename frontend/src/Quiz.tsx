@@ -51,7 +51,7 @@ const heroClass = (text: string) =>
 
 // On phones the next action floats just above the tab bar.
 const stickyBar =
-  "sticky bottom-20 z-[5] -mx-5 mt-4 bg-linear-to-t from-paper from-70% to-transparent px-5 pt-6 pb-2 md:static md:mx-0 md:bg-none md:p-0";
+  "sticky bottom-20 z-[5] -mx-5 mt-4 bg-linear-to-t from-paper from-70% to-transparent px-5 pt-6 pb-2 md:bottom-4 md:mx-0 md:bg-none md:p-0";
 
 export function Quiz({
   session,
@@ -186,14 +186,14 @@ export function Quiz({
         <Card
           key={`prompt-${index}`}
           margin
-          className="rise mt-6 rounded-hero py-7 pr-6 md:py-9"
+          className="rise mt-6 rounded-hero py-7 pr-6 md:py-8"
         >
           <h1
             className={cx(
               hero
                 ? "font-sans text-base font-medium text-ink-2"
                 : "text-h1 text-ink md:text-[2.25rem]",
-              !hero && question.prompt.length > 60 && "text-h3 md:text-h2",
+              !hero && question.prompt.length > 40 && "text-h2 md:text-h1",
             )}
           >
             {question.prompt}
@@ -240,7 +240,7 @@ export function Quiz({
               className={cx(
                 "min-h-16 w-full rounded-card border-2 bg-sheet-2 px-4 font-serif text-3xl font-semibold text-ink transition-colors",
                 !result
-                  ? "border-rule focus-visible:border-accent"
+                  ? "border-rule"
                   : result.correct
                     ? "border-success bg-success-soft pr-12"
                     : "border-danger bg-danger-soft pr-12",
@@ -276,7 +276,7 @@ export function Quiz({
         </form>
       )}
       {question.input_kind === "choice" && (
-        <ul key={`options-${index}`} className="mt-4 grid gap-3">
+        <ul key={`options-${index}`} className="mt-4 grid gap-3 md:grid-cols-2">
           {question.options.map((option, i) => {
             const right =
               !!feedback && option === feedback.result.correct_answer;
@@ -382,7 +382,12 @@ export function Quiz({
       </div>
       {result && (
         <div className={stickyBar}>
-          <Button autoFocus size="lg" className="w-full" onClick={next}>
+          <Button
+            autoFocus
+            size="lg"
+            className="w-full md:ml-auto md:flex md:w-72"
+            onClick={next}
+          >
             Próxima
             <Icon icon={ArrowRight} />
           </Button>

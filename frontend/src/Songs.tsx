@@ -187,21 +187,17 @@ function SongRow({
 
   return (
     <Card className="p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-h3 break-words">{song.title}</h2>
-          {song.artist && <p className="text-ink-2">{song.artist}</p>}
-        </div>
-        <Badge
-          tone={song.items > 0 ? "gold" : "neutral"}
-          icon={Library}
-          className="shrink-0"
-        >
-          {song.items > 0
-            ? plural(song.items, "palavra salva", "palavras salvas")
-            : "Nenhuma palavra salva ainda"}
-        </Badge>
-      </div>
+      <h2 className="text-h3 break-words">{song.title}</h2>
+      {song.artist && <p className="text-ink-2">{song.artist}</p>}
+      <Badge
+        tone={song.items > 0 ? "gold" : "neutral"}
+        icon={Library}
+        className="mt-3"
+      >
+        {song.items > 0
+          ? plural(song.items, "palavra salva", "palavras salvas")
+          : "Nenhuma palavra salva ainda"}
+      </Badge>
       <div className="mt-4 flex flex-wrap gap-2">
         {song.items > 0 && (
           <Link
@@ -445,26 +441,24 @@ function Review({
           />
         </div>
       )}
-      <div className="sticky bottom-20 z-[5] mt-6 grid gap-3 rounded-card bg-sheet p-3 shadow-[0_0_0_1px_var(--hairline),0_8px_24px_-8px_rgba(27,36,51,.28)] sm:grid-cols-[1fr_auto] sm:items-center sm:pl-4 md:bottom-4">
+      <div className="sticky bottom-20 z-[5] mt-6 grid grid-cols-2 items-center gap-x-3 gap-y-2 rounded-card bg-sheet p-3 shadow-[0_0_0_1px_var(--hairline),0_8px_24px_-8px_rgba(27,36,51,.28)] sm:grid-cols-[1fr_auto_auto] sm:pl-4 md:bottom-4">
         <p aria-live="polite" className="font-semibold">
           {selected.size} de {newCount} selecionadas
         </p>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={onBack}>
-            Descartar
-          </Button>
-          <Button
-            className="flex-1"
-            icon={Check}
-            loading={confirm.isPending}
-            disabled={selected.size === 0}
-            onClick={() => confirm.mutate()}
-          >
-            {confirm.isPending
-              ? "Salvando…"
-              : `Salvar selecionadas (${selected.size})`}
-          </Button>
-        </div>
+        <Button variant="ghost" className="justify-self-end" onClick={onBack}>
+          Descartar
+        </Button>
+        <Button
+          className="col-span-2 sm:col-span-1"
+          icon={Check}
+          loading={confirm.isPending}
+          disabled={selected.size === 0}
+          onClick={() => confirm.mutate()}
+        >
+          {confirm.isPending
+            ? "Salvando…"
+            : `Salvar selecionadas (${selected.size})`}
+        </Button>
       </div>
     </>
   );
