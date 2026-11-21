@@ -462,10 +462,7 @@ export function Quiz({
                   result.correct ? "stamp-in text-success" : "text-danger",
                 )}
               >
-                <Icon
-                  icon={result.correct ? CircleCheck : CircleX}
-                  size={28}
-                />
+                <Icon icon={result.correct ? CircleCheck : CircleX} size={28} />
               </span>
               <div className="min-w-0">
                 <p

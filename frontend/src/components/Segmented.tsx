@@ -15,6 +15,7 @@ export function Segmented<T extends string>({
   options,
   value,
   onChange,
+  size = "md",
   className,
 }: {
   /** Accessible name of the group. */
@@ -22,6 +23,8 @@ export function Segmented<T extends string>({
   options: SegmentedOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  /** `lg` is a roomier control for a screen's main choice. */
+  size?: "md" | "lg";
   className?: string;
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -61,7 +64,10 @@ export function Segmented<T extends string>({
             onClick={() => onChange(option.value)}
             onKeyDown={(event) => move(event, i)}
             className={cx(
-              "inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-[calc(var(--radius-control)-4px)] px-3.5 text-sm font-semibold transition-[background-color,box-shadow] duration-150",
+              "inline-flex flex-1 items-center justify-center gap-1.5 rounded-[calc(var(--radius-control)-4px)] font-semibold transition-[background-color,box-shadow] duration-150",
+              size === "lg"
+                ? "min-h-12 px-5 font-serif text-xl"
+                : "min-h-9 px-3.5 text-sm",
               selected
                 ? "bg-sheet text-ink shadow-card"
                 : "text-ink-2 hover:text-ink",
