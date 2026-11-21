@@ -179,15 +179,15 @@ export function ProviderCard({
   return (
     <Card
       margin={active}
-      className={`rise @container relative overflow-hidden p-0 ${active ? "shadow-[0_0_0_1.5px_var(--gold),var(--card-shadow)]" : ""}`}
+      className={`rise @container relative overflow-hidden p-0! ${active ? "shadow-[0_0_0_1.5px_var(--gold),var(--card-shadow)]" : ""}`}
       style={stagger(index)}
     >
       <section
         aria-labelledby={titleId}
-        className="grid @[46rem]:grid-cols-[15rem_minmax(0,1fr)]"
+        className="grid @[38rem]:grid-cols-[15rem_minmax(0,1fr)]"
       >
         <header
-          className={`relative flex flex-col gap-3 overflow-hidden p-5 @[46rem]:p-6 ${active ? "bg-gold-soft/50" : "bg-sheet-2/60"}`}
+          className={`relative flex flex-col gap-3 overflow-hidden p-5 @[38rem]:p-6 ${active ? "bg-gold-soft/50" : "bg-sheet-2/60"}`}
         >
           <span
             aria-hidden="true"
@@ -208,13 +208,13 @@ export function ProviderCard({
               {maker}
             </h3>
           </div>
-          <div className="@[46rem]:mt-auto">
+          <div className="@[38rem]:mt-auto">
             <StatusBadge provider={provider} active={active} />
           </div>
         </header>
 
         <div
-          className={`grid content-start gap-5 p-5 @[46rem]:p-6 ${active ? "margin-rule pl-9 @[46rem]:pl-9" : ""}`}
+          className={`grid content-start gap-5 p-5 @[38rem]:p-6 ${active ? "margin-rule pl-9 @[38rem]:pl-9" : ""}`}
         >
           <Step n={1} title="Chave">
             <form onSubmit={saveKey} className="grid content-start gap-3">

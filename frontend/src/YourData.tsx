@@ -103,9 +103,9 @@ export function YourData() {
       title="Seus dados"
       description="O backup guarda seu progresso, suas sessões e suas músicas. A chave da API não entra no arquivo."
     >
-      <Card className="@container grid gap-5 p-0">
-        <div className="grid gap-px bg-hairline @[40rem]:grid-cols-2 [&>*]:bg-sheet">
-          <div className="grid content-start gap-4 p-5 @[40rem]:p-6">
+      <Card className="@container grid gap-5 p-0!">
+        <div className="grid gap-px bg-hairline @[34rem]:grid-cols-2 [&>*]:bg-sheet">
+          <div className="grid content-start gap-4 p-5 @[34rem]:p-6">
             <div className="flex items-start gap-3">
               <span
                 aria-hidden="true"
@@ -152,7 +152,7 @@ export function YourData() {
             </div>
           </div>
 
-          <div className="grid content-start gap-4 p-5 @[40rem]:p-6">
+          <div className="grid content-start gap-4 p-5 @[34rem]:p-6">
             <div className="flex items-start gap-3">
               <span
                 aria-hidden="true"
@@ -182,7 +182,7 @@ export function YourData() {
             </Button>
           </div>
         </div>
-        <div className="grid gap-4 px-5 pb-5 empty:hidden @[40rem]:px-6 @[40rem]:pb-6">
+        <div className="grid gap-4 px-5 pb-5 empty:hidden @[34rem]:px-6 @[34rem]:pb-6">
           {pending !== undefined && (
             <ConfirmPanel
               title="Importar este backup?"

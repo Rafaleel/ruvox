@@ -195,7 +195,7 @@ function SongRow({
 
   const initial = song.title.trim().charAt(0).toUpperCase() || "♪";
   return (
-    <Card className="@container relative overflow-hidden p-0">
+    <Card className="@container relative overflow-hidden p-0!">
       <div className="flex gap-4 p-4 @[28rem]:p-5">
         <span
           aria-hidden="true"
@@ -430,7 +430,7 @@ function Review({
         className={cx(
           "mt-6 grid gap-8",
           analysis.grammar.length > 0 &&
-            "@[64rem]:grid-cols-[minmax(0,1fr)_20rem] @[64rem]:items-start",
+            "@[56rem]:grid-cols-[minmax(0,1fr)_20rem] @[56rem]:items-start",
         )}
       >
         <ul className="grid content-start gap-3 @[44rem]:grid-cols-2">
@@ -445,7 +445,7 @@ function Review({
           ))}
         </ul>
         {analysis.grammar.length > 0 && (
-          <section className="@[64rem]:sticky @[64rem]:top-4">
+          <section className="@[56rem]:sticky @[56rem]:top-4">
             <h2 className="mb-4 text-h3">Pontos de gramática</h2>
             <ul className="grid gap-3">
               {analysis.grammar.map((g, i) => (
