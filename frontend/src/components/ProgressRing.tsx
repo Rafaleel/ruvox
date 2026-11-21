@@ -15,6 +15,7 @@ export function ProgressRing({
   total: number;
   /** Accessible name; defaults to "value de total". */
   label?: string;
+  /** In design pixels at the 16px root; the ring scales with the root size. */
   size?: number;
   strokeWidth?: number;
   children?: ReactNode;
@@ -32,11 +33,11 @@ export function ProgressRing({
         "relative inline-grid shrink-0 place-items-center",
         className,
       )}
-      style={{ width: size, height: size }}
+      style={{ width: `${size / 16}rem`, height: `${size / 16}rem` }}
     >
       <svg
-        width={size}
-        height={size}
+        width="100%"
+        height="100%"
         viewBox={`0 0 ${size} ${size}`}
         aria-hidden="true"
         className="-rotate-90"

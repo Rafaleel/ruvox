@@ -93,7 +93,10 @@
 }
 
 @layer base {
+  /* The whole UI scales with the window: everything below is rem/em.
+     About 16px at 480 wide, 18px at 1100, 19.6px at 1600, capped at 21px. */
   html {
+    font-size: clamp(16px, 14.45px + 0.3226vw, 21px);
     -webkit-text-size-adjust: 100%;
   }
   body {

@@ -6,17 +6,21 @@ type IconProps = Omit<LucideProps, "ref"> & {
   label?: string;
 };
 
-/** Lucide icon with the design system defaults: 20px, 1.75 stroke. */
+/** Pixel sizes (numbers) become rem so icons scale with the fluid root size; strings pass through. */
+const toRem = (size: number | string) =>
+  typeof size === "number" ? `${size / 16}rem` : size;
+
+/** Lucide icon with the design system defaults: 1.25rem, 1.75 stroke. */
 export function Icon({
   icon: Glyph,
-  size = 20,
+  size = "1.25rem",
   strokeWidth = 1.75,
   label,
   ...props
 }: IconProps) {
   return (
     <Glyph
-      size={size}
+      size={toRem(size)}
       strokeWidth={strokeWidth}
       aria-hidden={label ? undefined : true}
       aria-label={label}
