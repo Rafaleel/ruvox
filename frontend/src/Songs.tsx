@@ -94,10 +94,15 @@ function NewSongForm({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <Card className="rise mt-6 rounded-hero p-5 md:p-8">
+    <Card className="rise margin-rule rounded-hero p-5 pl-9 @[52rem]:p-7 @[52rem]:pl-11">
       <form onSubmit={submit} className="grid gap-5">
-        <h2>Nova música</h2>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <p className="text-sm font-semibold tracking-wide text-accent">
+            Novo caderno
+          </p>
+          <h2>Nova música</h2>
+        </div>
+        <div className="grid gap-5 @[28rem]:grid-cols-2">
           <Input
             label="Título"
             value={title}
@@ -116,8 +121,8 @@ function NewSongForm({ onDone }: { onDone: () => void }) {
             id="lyrics"
             label="Letra"
             lang="ru"
-            rows={8}
-            className="font-serif text-lg leading-relaxed"
+            rows={9}
+            className="font-serif text-lg leading-relaxed min-h-[12rem]"
             aria-describedby="lyrics-help lyrics-count lyrics-error"
             help="A letra fica só neste computador."
             error={
@@ -185,20 +190,32 @@ function SongRow({
   });
   const [confirming, setConfirming] = useState(false);
 
+  const initial = song.title.trim().charAt(0).toUpperCase() || "♪";
   return (
-    <Card className="p-4 sm:p-5">
-      <h2 className="text-h3 break-words">{song.title}</h2>
-      {song.artist && <p className="text-ink-2">{song.artist}</p>}
-      <Badge
-        tone={song.items > 0 ? "gold" : "neutral"}
-        icon={Library}
-        className="mt-3"
-      >
-        {song.items > 0
-          ? plural(song.items, "palavra salva", "palavras salvas")
-          : "Nenhuma palavra salva ainda"}
-      </Badge>
-      <div className="mt-4 flex flex-wrap gap-2">
+    <Card className="relative overflow-hidden p-0">
+      <div className="flex gap-4 p-4 @[28rem]:p-5">
+        <span
+          aria-hidden="true"
+          lang="ru"
+          className="grid size-14 shrink-0 place-items-center rounded-[0.9rem] bg-(image:--foil) font-serif text-3xl leading-none font-semibold text-gold-ink shadow-[inset_0_0_0_1px_var(--gold)]"
+        >
+          {initial}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-h2 leading-tight break-words">{song.title}</h2>
+          {song.artist && <p className="mt-0.5 text-ink-2">{song.artist}</p>}
+          <Badge
+            tone={song.items > 0 ? "gold" : "neutral"}
+            icon={Library}
+            className="mt-3"
+          >
+            {song.items > 0
+              ? plural(song.items, "palavra salva", "palavras salvas")
+              : "Nenhuma palavra salva ainda"}
+          </Badge>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 border-t border-hairline bg-sheet-2/50 px-4 py-3 @[28rem]:px-5">
         {song.items > 0 && (
           <Link
             to={`/play?song=${song.id}`}
@@ -218,28 +235,30 @@ function SongRow({
         <Button
           variant="ghost"
           icon={Trash2}
-          className="sm:ml-auto"
+          className="ml-auto size-11 px-0 hover:bg-danger-soft hover:text-danger"
+          aria-label="Apagar"
+          title="Apagar música"
           onClick={() => setConfirming(true)}
-        >
-          Apagar
-        </Button>
+        />
       </div>
       {confirming && (
-        <ConfirmPanel
-          title={`Apagar “${song.title}”?`}
-          confirmLabel={remove.isPending ? "Apagando…" : "Apagar de vez"}
-          busy={remove.isPending}
-          onConfirm={() => remove.mutate()}
-          onCancel={() => setConfirming(false)}
-        >
-          <p>
-            As palavras salvas dela e o seu progresso nessas palavras também
-            serão apagados. Não dá para desfazer.
-          </p>
-        </ConfirmPanel>
+        <div className="p-4 pt-0 @[28rem]:px-5">
+          <ConfirmPanel
+            title={`Apagar “${song.title}”?`}
+            confirmLabel={remove.isPending ? "Apagando…" : "Apagar de vez"}
+            busy={remove.isPending}
+            onConfirm={() => remove.mutate()}
+            onCancel={() => setConfirming(false)}
+          >
+            <p>
+              As palavras salvas dela e o seu progresso nessas palavras também
+              serão apagados. Não dá para desfazer.
+            </p>
+          </ConfirmPanel>
+        </div>
       )}
       {remove.isError && (
-        <div className="mt-3">
+        <div className="p-4 pt-0">
           <ErrorMessage error={remove.error} onRetry={() => remove.mutate()} />
         </div>
       )}
