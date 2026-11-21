@@ -24,7 +24,7 @@
   --success-soft: #dcefe1;
   --danger: #a8281e;
   --danger-soft: #f7dcd8;
-  --shadow-card:
+  --card-shadow:
     0 0 0 1px var(--hairline), 0 1px 2px rgba(27, 36, 51, 0.06),
     0 6px 16px -8px rgba(27, 36, 51, 0.18);
 
@@ -58,7 +58,7 @@
     --danger: #ff9d90;
     --danger-soft: #3d201c;
     /* Shadows do not read on dark: a 1px ring only. */
-    --shadow-card: 0 0 0 1px var(--hairline);
+    --card-shadow: 0 0 0 1px var(--hairline);
   }
 }
 
@@ -84,7 +84,7 @@
   --color-surface: var(--sheet);
   --color-line: var(--rule);
   --color-muted: var(--ink-2);
-  --shadow-card: var(--shadow-card);
+  --shadow-card: var(--card-shadow);
 }
 
 @theme {
