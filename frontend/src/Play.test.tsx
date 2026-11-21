@@ -8,6 +8,8 @@ import {
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { Dock } from "./components/Dock";
+import { DockProvider } from "./components/DockProvider";
 import { Play } from "./Play";
 
 const question = (id: number, prompt: string) => ({
@@ -170,4 +172,76 @@ it("retries after a network error", async () => {
   ).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Tentar de novo" }));
   expect(await screen.findByText("Como se lê Ч?")).toBeTruthy();
+});
+
+it("hides the dock while questions run and brings it back on the result", async () => {
+  routes["POST /api/sessions"] = () =>
+    Response.json({
+      session_id: 7,
+      source: "offline",
+      questions: [question(1, "Como se lê Ч?")],
+    });
+  routes["POST /api/sessions/7/answers"] = () => Response.json(answerOut(true));
+  routes["POST /api/sessions/7/finish"] = () =>
+    Response.json({
+      score: 1,
+      answered: 1,
+      correct: 1,
+      items_to_review: [],
+      ended_at: "2026-01-01T00:00:00Z",
+    });
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>
+        <DockProvider>
+          <Play />
+          <Dock />
+        </DockProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+  const dock = () => screen.getByRole("navigation", { hidden: true });
+  expect(dock().hasAttribute("inert")).toBe(false);
+  fireEvent.click(screen.getByRole("button", { name: "Começar" }));
+  await screen.findByText("Como se lê Ч?");
+  expect(dock().hasAttribute("inert")).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: /tch/ }));
+  await screen.findByText("Correto!");
+  fireEvent.click(screen.getByRole("button", { name: "Próxima" }));
+  await screen.findByText("Resultado");
+  expect(dock().hasAttribute("inert")).toBe(false);
+});
+
+it("leaves a session at once before any answer and asks after one", async () => {
+  routes["POST /api/sessions"] = () =>
+    Response.json({
+      session_id: 7,
+      source: "offline",
+      questions: [question(1, "Como se lê Ч?"), question(2, "Como se lê Ш?")],
+    });
+  routes["POST /api/sessions/7/answers"] = () => Response.json(answerOut(true));
+  renderPlay();
+  fireEvent.click(screen.getByRole("button", { name: "Começar" }));
+  await screen.findByText("Como se lê Ч?");
+  // Nothing answered: nothing to lose, so no question.
+  fireEvent.click(screen.getByRole("button", { name: "Sair da sessão" }));
+  expect(screen.getByRole("button", { name: "Começar" })).toBeTruthy();
+
+  fireEvent.click(screen.getByRole("button", { name: "Começar" }));
+  await screen.findByText("Como se lê Ч?");
+  fireEvent.click(screen.getByRole("button", { name: /tch/ }));
+  await screen.findByText("Correto!");
+  fireEvent.click(screen.getByRole("button", { name: "Sair da sessão" }));
+  const panel = screen.getByRole("alertdialog");
+  expect(within(panel).getByText(/não conta/)).toBeTruthy();
+  // The digit shortcuts stay quiet while the question is open.
+  fireEvent.keyDown(window, { key: "1" });
+  expect(
+    fetchMock.mock.calls.filter(([u]) => u.endsWith("/answers")),
+  ).toHaveLength(1);
+  fireEvent.click(within(panel).getByRole("button", { name: "Cancelar" }));
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Sair da sessão" }));
+  fireEvent.click(screen.getByRole("button", { name: "Sair" }));
+  expect(screen.getByRole("button", { name: "Começar" })).toBeTruthy();
 });

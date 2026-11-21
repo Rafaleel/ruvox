@@ -51,7 +51,7 @@ export function Result({
         </div>
         {/* A laurel is earned at 70 percent; below that the score is a plain stamp. */}
         {share >= 0.7 ? (
-          <Laurel className="stamp-in relative mx-auto mt-4 w-[min(72%,15rem)]">
+          <Laurel className="stamp-in relative mx-auto mt-3 w-[min(60%,12.5rem)]">
             {score}
           </Laurel>
         ) : (
@@ -65,14 +65,14 @@ export function Result({
             </StampFrame>
           </div>
         )}
-        <h1 className="relative mt-5 flex flex-wrap items-center justify-center gap-2 text-h1 @[34rem]:text-[2.25rem]">
+        <h1 className="relative mt-4 flex flex-wrap items-center justify-center gap-2 text-h1 @[34rem]:text-[2.25rem]">
           {headline(result.correct, result.answered)}
           {perfect && <Icon icon={Sparkles} size={28} className="text-gold" />}
         </h1>
         <p className="relative mt-2 text-lg text-ink-2">
           Você acertou {result.correct} de {result.answered} perguntas.
         </p>
-        <div className="relative mt-8 grid gap-3">
+        <div className="relative mt-6 grid gap-3">
           <Button size="lg" icon={RotateCw} onClick={onRestart}>
             Jogar de novo
           </Button>
