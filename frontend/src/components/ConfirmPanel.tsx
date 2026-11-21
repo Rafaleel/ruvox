@@ -24,9 +24,9 @@ export function ConfirmPanel({
       aria-labelledby={`${id}-title`}
       aria-describedby={`${id}-body`}
       onKeyDown={(e) => e.key === "Escape" && onCancel()}
-      className="mt-3 grid gap-2 rounded-xl border border-danger p-4"
+      className="mt-3 grid gap-2 rounded-card bg-danger-soft p-4 shadow-[inset_0_0_0_1px_var(--danger)]"
     >
-      <p id={`${id}-title`} className="font-bold">
+      <p id={`${id}-title`} className="font-semibold text-danger">
         {title}
       </p>
       <div id={`${id}-body`}>{children}</div>
@@ -34,7 +34,7 @@ export function ConfirmPanel({
         <Button variant="secondary" autoFocus onClick={onCancel}>
           Cancelar
         </Button>
-        <Button disabled={busy} onClick={onConfirm}>
+        <Button variant="danger" disabled={busy} onClick={onConfirm}>
           {confirmLabel}
         </Button>
       </div>
