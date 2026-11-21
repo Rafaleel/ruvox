@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Timer, X } from "lucide-react";
+import { ArrowRight, Check, Timer, X } from "lucide-react";
 import type { Question } from "../api/client";
 import { cx } from "./cx";
 import { Icon } from "./Icon";
@@ -19,23 +19,29 @@ type Tile = "idle" | "picked" | "matched" | "wrong";
 
 const tileClass = (state: Tile) =>
   cx(
-    "relative flex min-h-14 w-full items-center justify-center gap-1.5 rounded-card px-3 py-2 text-center leading-snug font-semibold break-words",
+    "relative flex min-h-16 w-full items-center justify-center gap-2 rounded-card px-3.5 py-2.5 text-center leading-snug font-semibold break-words",
     "transition-[transform,box-shadow,background-color] duration-150 ease-out-soft",
     state === "idle" &&
-      "bg-sheet text-ink shadow-card hover:-translate-y-px active:scale-[.97]",
+      "bg-sheet text-ink shadow-card hover:-translate-y-0.5 hover:shadow-[0_0_0_1.5px_var(--rule)] active:scale-[.97]",
     state === "picked" &&
-      "-translate-y-px bg-sheet text-ink shadow-[0_0_0_2px_var(--accent)]",
+      "-translate-y-0.5 bg-accent-soft text-ink shadow-[0_0_0_2px_var(--accent)]",
     state === "matched" &&
-      "bg-success-soft text-success shadow-[0_0_0_1px_var(--success)]",
+      "pulse-ok bg-success-soft text-success shadow-[0_0_0_1.5px_var(--success)]",
     state === "wrong" &&
-      "shake bg-danger-soft text-danger shadow-[0_0_0_1.5px_var(--danger)]",
+      "shake bg-danger-soft text-danger shadow-[0_0_0_2px_var(--danger)]",
   );
 
 function TileMark({ state }: { state: Tile }) {
   if (state === "matched")
-    return <Icon icon={Check} size={18} className="shrink-0" />;
+    return (
+      <Icon icon={Check} size={20} strokeWidth={2.5} className="shrink-0" />
+    );
   if (state === "wrong")
-    return <Icon icon={X} size={18} className="shrink-0" />;
+    return <Icon icon={X} size={20} strokeWidth={2.5} className="shrink-0" />;
+  if (state === "picked")
+    return (
+      <Icon icon={ArrowRight} size={20} className="shrink-0 text-accent" />
+    );
   return null;
 }
 
@@ -121,31 +127,31 @@ export function PairsGame({
           : "idle";
 
   return (
-    <div className="mt-4">
-      <div className="rounded-card bg-sheet p-3 shadow-card">
-        <div className="flex items-center justify-between gap-3 text-sm">
+    <div className="rise mt-4">
+      <div className="rounded-card bg-sheet p-4 shadow-card">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <span className="font-semibold text-ink">
             {matched.size} de {pairs.length} pares
           </span>
-          <span className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-ink-2">
-              <Icon icon={X} size={14} />
+          <span className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5 text-sm text-ink-2">
+              <Icon icon={X} size={16} />
               Erros: {mistakeCount}
             </span>
             <span
               className={cx(
-                "flex items-center gap-1 font-semibold",
-                urgent ? "text-danger" : "text-ink-2",
+                "flex items-center gap-1.5 font-serif text-2xl leading-none font-semibold",
+                urgent ? "text-danger" : "text-ink",
               )}
             >
-              <Icon icon={Timer} size={16} />
+              <Icon icon={Timer} size={22} />
               Tempo: {Math.max(0, secondsLeft)}s
             </span>
           </span>
         </div>
         <div
           aria-hidden="true"
-          className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-sheet-2"
+          className="mt-3 h-2 overflow-hidden rounded-full bg-sheet-2 shadow-[inset_0_0_0_1px_var(--hairline)]"
         >
           <div
             className={cx(
@@ -162,13 +168,29 @@ export function PairsGame({
       <p aria-live="polite" className="sr-only">
         {secondsLeft === 10 ? "Faltam 10 segundos." : ""}
       </p>
-      <p
-        aria-live="polite"
-        className="mt-3 min-h-6 text-sm font-medium text-danger"
-      >
-        {wrong ? "Não combina. Tente de novo." : ""}
-      </p>
-      <div className="mt-1 grid grid-cols-2 gap-3">
+      <div className="mt-3 min-h-6">
+        <p aria-live="polite" className="text-sm font-medium text-danger">
+          {wrong ? "Não combina. Tente de novo." : ""}
+        </p>
+        {!wrong && (
+          <p className="text-sm text-ink-3">
+            Escolha uma palavra e depois o seu significado.
+          </p>
+        )}
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 @[34rem]:gap-x-6">
+        <p
+          aria-hidden="true"
+          className="text-sm font-semibold tracking-wide text-accent uppercase"
+        >
+          Palavras
+        </p>
+        <p
+          aria-hidden="true"
+          className="text-sm font-semibold tracking-wide text-accent uppercase"
+        >
+          Significados
+        </p>
         <ul className="grid content-start gap-3" aria-label="Palavras">
           {lefts.map((p) => {
             const state = tileState("left", p.item_id);
@@ -183,7 +205,7 @@ export function PairsGame({
                     setWrong(null);
                     setPicked(p.item_id);
                   }}
-                  className={cx(tileClass(state), "font-serif text-xl")}
+                  className={cx(tileClass(state), "font-serif text-2xl")}
                 >
                   <TileMark state={state} />
                   {p.left}
@@ -201,7 +223,7 @@ export function PairsGame({
                   type="button"
                   disabled={finished || matched.has(p.item_id)}
                   onClick={() => pickRight(p.item_id)}
-                  className={tileClass(state)}
+                  className={cx(tileClass(state), "text-lg")}
                 >
                   <TileMark state={state} />
                   {p.right}

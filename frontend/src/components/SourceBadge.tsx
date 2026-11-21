@@ -20,7 +20,12 @@ const BADGES = {
 export function SourceBadge({ source }: { source: Session["source"] }) {
   const { label, hint, tone, icon } = BADGES[source];
   return (
-    <Badge tone={tone} icon={icon} title={hint}>
+    <Badge
+      tone={tone}
+      icon={icon}
+      title={hint}
+      className="gap-1.5 py-1 text-[0.8125rem] ring-1 ring-current/25 ring-inset"
+    >
       {label}
       <span className="sr-only">: {hint}</span>
     </Badge>
