@@ -16,17 +16,29 @@
   --rule: #8c8268;
   --hairline: rgba(27, 36, 51, 0.1);
   --accent: #b8352a;
+  --accent-soft: #f5dcd6;
   --on-accent: #fffdf8;
   --gold: #b7791f;
   --gold-ink: #8a5a12;
   --gold-soft: #f6e7c1;
   --success: #2f6b45;
+  --on-success: #fffdf8;
   --success-soft: #dcefe1;
   --danger: #a8281e;
   --danger-soft: #f7dcd8;
   --card-shadow:
     0 0 0 1px var(--hairline), 0 1px 2px rgba(27, 36, 51, 0.06),
     0 6px 16px -8px rgba(27, 36, 51, 0.18);
+  /* The floating level: the dock, popovers. */
+  --float-shadow:
+    0 0 0 1px var(--hairline), 0 2px 4px rgba(27, 36, 51, 0.08),
+    0 18px 40px -12px rgba(27, 36, 51, 0.38);
+  /* Gold foil for stamps: a soft diagonal sheen, not a rainbow. */
+  --foil: linear-gradient(135deg, #f9edcc 0%, #f1dba2 48%, #f8e8bd 100%);
+  /* Ruled notebook lines and the paper grain. */
+  --ruling: rgba(66, 104, 156, 0.14);
+  --grain-opacity: 0.045;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 
   font-family: var(--font-sans);
   color: var(--ink);
@@ -43,16 +55,24 @@
     --rule: #6c7f8c;
     --hairline: rgba(242, 236, 222, 0.12);
     --accent: #ee7a68;
+    --accent-soft: #3b2320;
     --on-accent: #1a0f0d;
     --gold: #e3b04b;
     --gold-ink: #e3b04b;
     --gold-soft: #3a3018;
     --success: #8fd0a0;
+    --on-success: #0e2417;
     --success-soft: #1d3a2a;
     --danger: #ff9d90;
     --danger-soft: #3d201c;
     /* Shadows do not read on dark: a 1px ring only. */
     --card-shadow: 0 0 0 1px var(--hairline);
+    --float-shadow:
+      0 0 0 1px var(--hairline), 0 20px 40px -14px rgba(0, 0, 0, 0.75);
+    --foil: linear-gradient(135deg, #3c3219 0%, #4b3c1a 48%, #3a3018 100%);
+    --ruling: rgba(150, 190, 230, 0.09);
+    --grain-opacity: 0.07;
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 }
 
@@ -66,15 +86,18 @@
   --color-rule: var(--rule);
   --color-hairline: var(--hairline);
   --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
   --color-on-accent: var(--on-accent);
   --color-gold: var(--gold);
   --color-gold-ink: var(--gold-ink);
   --color-gold-soft: var(--gold-soft);
   --color-success: var(--success);
+  --color-on-success: var(--on-success);
   --color-success-soft: var(--success-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --shadow-card: var(--card-shadow);
+  --shadow-float: var(--float-shadow);
 }
 
 @theme {
@@ -83,12 +106,17 @@
   --radius-control: 0.625rem;
   --radius-card: 1rem;
   --radius-hero: 1.25rem;
+  --radius-sheet: 1.5rem;
+  /* Layout widths: a reading column and the wide composition. */
+  --container-reading: 40rem;
+  --container-wide: 68rem;
   --text-h3: 1.25rem;
   --text-h2: 1.5625rem;
   --text-h1: 1.9375rem;
   --text-display: 2.5rem;
   --text-letter: 4.5rem;
   --text-letter-hero: 6rem;
+  --text-hero: 8rem;
   --ease-out-soft: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
@@ -165,6 +193,12 @@
     transform: scale(1.02);
   }
 }
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) rotate(2deg);
+  }
+}
 
 /* Entrance: 8px rise and fade; set `style={{ "--i": n }}` to stagger by 40ms. */
 .rise {
@@ -176,6 +210,27 @@
 }
 .pulse-ok {
   animation: pulse-ok 220ms var(--ease-out-soft) 1;
+}
+/* A rubber stamp landing: scale from .9 with a 2 degree twist, 220ms. */
+.stamp-in {
+  animation: stamp-in 220ms var(--ease-out-soft) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+/* Whole-page entrance, set on the keyed wrapper in Layout. */
+.page-in {
+  animation: rise 220ms var(--ease-out-soft) both;
+}
+/* Tile and card hover: a small lift with a pointer, press feedback everywhere. */
+.lift {
+  transition: transform 150ms var(--ease-out-soft);
+}
+@media (hover: hover) {
+  .lift:hover {
+    transform: translateY(-0.125rem) scale(1.04);
+  }
+}
+.lift:active {
+  transform: scale(0.97);
 }
 
 /* The notebook's red margin line, on the left of a paper card. */
@@ -191,9 +246,55 @@
   background: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
+/* Atmosphere: paper grain over everything (static, no blend mode so it stays
+   cheap in WebKit) and, on the dark "lousa", a soft vignette. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background-image: var(--grain);
+  background-size: 15rem;
+  opacity: var(--grain-opacity);
+}
+@media (prefers-color-scheme: dark) {
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 59;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 85% 75% at 50% 35%,
+      transparent 45%,
+      rgba(0, 0, 0, 0.42)
+    );
+  }
+}
+
+/* Ruled notebook paper: faint blue lines, one every 1.75rem, fading out downward. */
+.ruled {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(1.75rem - 1px),
+    var(--ruling) calc(1.75rem - 1px),
+    var(--ruling) 1.75rem
+  );
+  -webkit-mask-image: linear-gradient(to bottom, #000 30%, transparent 95%);
+  mask-image: linear-gradient(to bottom, #000 30%, transparent 95%);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .rise {
+  .rise,
+  .page-in,
+  .stamp-in {
     animation-name: fade;
+  }
+  .lift:hover,
+  .lift:active {
+    transform: none;
   }
   .shake,
   .pulse-ok {
