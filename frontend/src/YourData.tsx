@@ -1,9 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Archive, Download, Eraser, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
-import { ApiError, exportBackup, importBackup, resetData } from "./api/client";
+import { exportBackup, importBackup, resetData } from "./api/client";
 import { Button } from "./components/Button";
 import { Card } from "./components/Card";
 import { ConfirmPanel } from "./components/ConfirmPanel";
+import { friendlyError } from "./components/ErrorMessage";
+import { Icon } from "./components/Icon";
+import { Notice } from "./components/Notice";
+import { Section } from "./components/Section";
 
 const COUNT_LABELS: [string, string][] = [
   ["songs", "músicas"],
@@ -94,92 +99,129 @@ export function YourData() {
   const error = exporting.error ?? importing.error ?? resetting.error;
 
   return (
-    <Card className="mt-4">
-      <h2 className="text-xl font-bold">Seus dados</h2>
-      <p className="mt-2 text-muted">
-        O backup guarda seu progresso, suas sessões e suas músicas. A chave da
-        API não entra no arquivo.
-      </p>
+    <Section
+      title="Seus dados"
+      description="O backup guarda seu progresso, suas sessões e suas músicas. A chave da API não entra no arquivo."
+    >
+      <Card className="@container grid gap-5 p-0!">
+        <div className="grid gap-px bg-hairline @[34rem]:grid-cols-2 [&>*]:bg-sheet">
+          <div className="grid content-start gap-4 p-5 @[34rem]:p-6">
+            <div className="flex items-start gap-3">
+              <span
+                aria-hidden="true"
+                className="grid size-10 shrink-0 place-items-center rounded-control bg-sheet-2 text-ink-2"
+              >
+                <Icon icon={Archive} />
+              </span>
+              <div>
+                <h3 className="text-base font-semibold">Backup</h3>
+                <p className="text-sm text-ink-2">
+                  Um arquivo com tudo, para guardar ou levar a outro computador.
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-2 @[24rem]:flex @[24rem]:flex-wrap">
+              <Button
+                variant="secondary"
+                icon={Download}
+                loading={exporting.isPending}
+                onClick={() => {
+                  startOver();
+                  exporting.mutate();
+                }}
+              >
+                {exporting.isPending ? "Exportando…" : "Exportar backup"}
+              </Button>
+              <Button
+                variant="secondary"
+                icon={Upload}
+                disabled={importing.isPending}
+                onClick={() => fileInput.current?.click()}
+              >
+                Importar backup
+              </Button>
+              <input
+                ref={fileInput}
+                type="file"
+                accept=".json,application/json"
+                aria-label="Arquivo de backup"
+                className="sr-only"
+                tabIndex={-1}
+                onChange={(e) => pickFile(e.target.files?.[0])}
+              />
+            </div>
+          </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button
-          variant="secondary"
-          disabled={exporting.isPending}
-          onClick={() => {
-            startOver();
-            exporting.mutate();
-          }}
-        >
-          {exporting.isPending ? "Exportando…" : "Exportar backup"}
-        </Button>
-        <Button
-          variant="secondary"
-          disabled={importing.isPending}
-          onClick={() => fileInput.current?.click()}
-        >
-          Importar backup
-        </Button>
-        <input
-          ref={fileInput}
-          type="file"
-          accept=".json,application/json"
-          aria-label="Arquivo de backup"
-          className="sr-only"
-          tabIndex={-1}
-          onChange={(e) => pickFile(e.target.files?.[0])}
-        />
-        <Button
-          variant="secondary"
-          disabled={resetting.isPending}
-          onClick={() => {
-            startOver();
-            setConfirmReset(true);
-          }}
-        >
-          Apagar meu progresso
-        </Button>
-      </div>
+          <div className="grid content-start gap-4 p-5 @[34rem]:p-6">
+            <div className="flex items-start gap-3">
+              <span
+                aria-hidden="true"
+                className="grid size-10 shrink-0 place-items-center rounded-control bg-danger-soft text-danger"
+              >
+                <Icon icon={Eraser} />
+              </span>
+              <div>
+                <h3 className="text-base font-semibold">Começar do zero</h3>
+                <p className="text-sm text-ink-2">
+                  Apaga progresso, sessões e músicas. As configurações e a chave
+                  da API ficam.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="secondary"
+              icon={Trash2}
+              className="w-fit"
+              loading={resetting.isPending}
+              onClick={() => {
+                startOver();
+                setConfirmReset(true);
+              }}
+            >
+              Apagar meu progresso
+            </Button>
+          </div>
+        </div>
+        <div className="grid gap-4 px-5 pb-5 empty:hidden @[34rem]:px-6 @[34rem]:pb-6">
+          {pending !== undefined && (
+            <ConfirmPanel
+              title="Importar este backup?"
+              confirmLabel="Substituir meus dados"
+              busy={importing.isPending}
+              onConfirm={() => importing.mutate(pending)}
+              onCancel={() => setPending(undefined)}
+            >
+              <p>
+                Isto SUBSTITUI todo o seu progresso e todas as suas músicas
+                pelos do arquivo. As configurações e a chave da API não mudam.
+              </p>
+            </ConfirmPanel>
+          )}
 
-      {pending !== undefined && (
-        <ConfirmPanel
-          title="Importar este backup?"
-          confirmLabel="Substituir meus dados"
-          busy={importing.isPending}
-          onConfirm={() => importing.mutate(pending)}
-          onCancel={() => setPending(undefined)}
-        >
-          <p>
-            Isto SUBSTITUI todo o seu progresso e todas as suas músicas pelos do
-            arquivo. As configurações e a chave da API não mudam.
-          </p>
-        </ConfirmPanel>
-      )}
-      {confirmReset && (
-        <ConfirmPanel
-          title="Apagar seu progresso?"
-          confirmLabel="Apagar tudo"
-          busy={resetting.isPending}
-          onConfirm={() => resetting.mutate()}
-          onCancel={() => setConfirmReset(false)}
-        >
-          <p>
-            Isto apaga seu progresso, suas sessões e suas músicas, e não dá para
-            desfazer. As configurações e a chave da API continuam como estão.
-          </p>
-        </ConfirmPanel>
-      )}
+          <div aria-live="polite" className="grid gap-3 empty:hidden">
+            {notice && <Notice tone="success">{notice}</Notice>}
+          </div>
+          {(error || readError) && (
+            <Notice tone="danger">{readError || friendlyError(error)}</Notice>
+          )}
 
-      <div aria-live="polite" className="mt-3">
-        {notice && <p className="text-success">{notice}</p>}
-      </div>
-      {(error || readError) && (
-        <p role="alert" className="mt-3 text-danger">
-          {readError ||
-            (error instanceof ApiError
-              ? error.message
-              : "Algo deu errado. Tente de novo.")}
-        </p>
-      )}
-    </Card>
+          {confirmReset && (
+            <ConfirmPanel
+              title="Apagar seu progresso?"
+              confirmLabel="Apagar tudo"
+              busy={resetting.isPending}
+              onConfirm={() => resetting.mutate()}
+              onCancel={() => setConfirmReset(false)}
+            >
+              <p>
+                Isto apaga seu progresso, suas sessões e suas músicas, e não dá
+                para desfazer. As configurações e a chave da API continuam como
+                estão.
+              </p>
+            </ConfirmPanel>
+          )}
+        </div>
+      </Card>
+    </Section>
   );
 }

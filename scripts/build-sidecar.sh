@@ -22,4 +22,5 @@ uv run --frozen pyinstaller "$mode" --noconfirm --name "$name" \
     --add-data "$PWD/alembic/versions/*.py:alembic/versions" \
     --add-data "$PWD/app/web:app/web" --add-data "$PWD/app/data:app/data" \
     --copy-metadata agno --copy-metadata anthropic \
+    --copy-metadata openai --copy-metadata groq \
     "$PWD/app/sidecar.py"

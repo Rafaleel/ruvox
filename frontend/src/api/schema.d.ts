@@ -106,6 +106,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/progress/letters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Letters
+         * @description Every alphabet letter with how well it is known (the alphabet map).
+         */
+        get: operations["letters_api_progress_letters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/settings": {
         parameters: {
             query?: never;
@@ -118,6 +138,26 @@ export interface paths {
         /** Put Settings */
         put: operations["put_settings_api_settings_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/settings/providers/{provider_id}/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Provider Models
+         * @description The models this key can use, from the provider itself (never typed by hand).
+         */
+        post: operations["provider_models_api_settings_providers__provider_id__models_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -537,6 +577,11 @@ export interface components {
             /** Difficulty */
             difficulty: number;
         };
+        /** LLMTestIn */
+        LLMTestIn: {
+            /** Provider */
+            provider?: string | null;
+        };
         /** LLMTestOut */
         LLMTestOut: {
             /** Ok */
@@ -569,6 +614,22 @@ export interface components {
             /** Paired */
             paired: boolean;
         };
+        /** LetterStatus */
+        LetterStatus: {
+            /** Id */
+            id: number;
+            /** Text */
+            text: string;
+            /** Pronunciation */
+            pronunciation: string;
+            /** Group */
+            group: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "new" | "learning" | "familiar" | "mastered";
+        };
         /** MasteryOut */
         MasteryOut: {
             /** New */
@@ -579,6 +640,28 @@ export interface components {
             familiar: number;
             /** Mastered */
             mastered: number;
+        };
+        /** ModelOption */
+        ModelOption: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+        };
+        /** ModelsIn */
+        ModelsIn: {
+            /** Api Key */
+            api_key?: string | null;
+        };
+        /** ModelsOut */
+        ModelsOut: {
+            /** Models */
+            models: components["schemas"]["ModelOption"][];
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "live" | "builtin";
         };
         /** Pair */
         Pair: {
@@ -604,6 +687,32 @@ export interface components {
             words_unlocked: number;
             /** Words Total */
             words_total: number;
+        };
+        /** ProviderIn */
+        ProviderIn: {
+            /** Api Key */
+            api_key?: string | null;
+            /** Model */
+            model?: string | null;
+        };
+        /** ProviderOut */
+        ProviderOut: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Maker */
+            maker: string;
+            /** Has Key */
+            has_key: boolean;
+            /** Key From Env */
+            key_from_env: boolean;
+            /** Model */
+            model: string;
+            /** Key Url */
+            key_url: string;
+            /** Key Example */
+            key_example: string;
         };
         /**
          * QuestionOut
@@ -663,22 +772,27 @@ export interface components {
         };
         /** SettingsIn */
         SettingsIn: {
-            /** Api Key */
-            api_key?: string | null;
-            /** Model */
-            model?: string | null;
+            /** Active Provider */
+            active_provider?: string | null;
+            /**
+             * Providers
+             * @default {}
+             */
+            providers: {
+                [key: string]: components["schemas"]["ProviderIn"];
+            };
         };
         /**
          * SettingsOut
-         * @description The API key is write-only: only its presence and source are reported.
+         * @description Keys are write-only: only their presence is reported.
          */
         SettingsOut: {
-            /** Has Key */
-            has_key: boolean;
-            /** Key From Env */
-            key_from_env: boolean;
-            /** Model */
-            model: string;
+            /** Active Provider */
+            active_provider: string;
+            /** Providers */
+            providers: components["schemas"]["ProviderOut"][];
+            /** Llm Ready */
+            llm_ready: boolean;
         };
         /** SongAnalysisOut */
         SongAnalysisOut: {
@@ -944,6 +1058,26 @@ export interface operations {
             };
         };
     };
+    letters_api_progress_letters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetterStatus"][];
+                };
+            };
+        };
+    };
     get_settings_api_settings_get: {
         parameters: {
             query?: never;
@@ -997,6 +1131,41 @@ export interface operations {
             };
         };
     };
+    provider_models_api_settings_providers__provider_id__models_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ModelsIn"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     test_llm_api_settings_test_llm_post: {
         parameters: {
             query?: never;
@@ -1004,7 +1173,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LLMTestIn"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -1013,6 +1186,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LLMTestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

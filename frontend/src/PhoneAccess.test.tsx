@@ -72,7 +72,7 @@ it("is off by default and asks for confirmation before enabling", async () => {
   const toggle = await screen.findByRole("switch", {
     name: "Permitir acesso pelo celular",
   });
-  expect((toggle as HTMLInputElement).checked).toBe(false);
+  expect(toggle.getAttribute("aria-checked")).toBe("false");
 
   fireEvent.click(toggle);
   expect(

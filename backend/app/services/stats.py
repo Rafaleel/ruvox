@@ -15,6 +15,15 @@ def local_day(value: datetime, tz: tzinfo) -> date:
     return as_utc(value).astimezone(tz).date()
 
 
+def bucket(state: ReviewState | None) -> str:
+    """new (never answered), learning, familiar or mastered."""
+    if state is None:
+        return "new"
+    if state.interval_days >= MASTERED_INTERVAL_DAYS:
+        return "mastered"
+    return "familiar" if state.repetitions >= 2 else "learning"
+
+
 def mastery(db: Session, user_id: int) -> dict[str, int]:
     """new: never answered; learning: repetitions < 2; familiar; mastered: interval >= 21 days."""
     total = db.exec(

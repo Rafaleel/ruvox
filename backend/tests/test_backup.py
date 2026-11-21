@@ -132,7 +132,10 @@ def test_a_broken_backup_changes_nothing(client: TestClient) -> None:
 
 
 def test_export_never_contains_the_api_key(client: TestClient) -> None:
-    client.put("/api/settings", json={"api_key": "sk-ant-very-secret"})
+    client.put(
+        "/api/settings",
+        json={"providers": {"anthropic": {"api_key": "sk-ant-very-secret"}}},
+    )
     populate(client)
     text = client.post("/api/backup/export").text
     assert "sk-ant" not in text and "api_key" not in text
@@ -141,12 +144,17 @@ def test_export_never_contains_the_api_key(client: TestClient) -> None:
 
 def test_reset_keeps_settings(client: TestClient) -> None:
     client.put(
-        "/api/settings", json={"api_key": "sk-keep", "model": "claude-haiku-5-5"}
+        "/api/settings",
+        json={
+            "providers": {
+                "anthropic": {"api_key": "sk-keep", "model": "claude-haiku-5-5"}
+            }
+        },
     )
     populate(client)
     client.post("/api/data/reset")
-    settings = client.get("/api/settings").json()
-    assert settings["has_key"] is True and settings["model"] == "claude-haiku-5-5"
+    claude = client.get("/api/settings").json()["providers"][0]
+    assert claude["has_key"] is True and claude["model"] == "claude-haiku-5-5"
 
 
 def test_hand_edited_backups_are_rejected_before_anything_changes(

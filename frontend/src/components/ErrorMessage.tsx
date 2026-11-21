@@ -1,5 +1,7 @@
+import { CircleAlert, RotateCw } from "lucide-react";
 import { ApiError } from "../api/client";
 import { Button } from "./Button";
+import { Icon } from "./Icon";
 
 export function friendlyError(error: unknown): string {
   if (error instanceof ApiError) {
@@ -21,10 +23,13 @@ export function ErrorMessage({
   return (
     <div
       role="alert"
-      className="grid gap-3 rounded-xl border border-danger p-4"
+      className="grid gap-3 rounded-card bg-danger-soft p-4 shadow-[inset_0_0_0_1px_var(--danger)]"
     >
-      <p>{friendlyError(error)}</p>
-      <Button variant="secondary" onClick={onRetry}>
+      <p className="flex gap-2.5 text-ink">
+        <Icon icon={CircleAlert} className="mt-0.5 shrink-0 text-danger" />
+        <span>{friendlyError(error)}</span>
+      </p>
+      <Button variant="secondary" icon={RotateCw} onClick={onRetry}>
         Tentar de novo
       </Button>
     </div>

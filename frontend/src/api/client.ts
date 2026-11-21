@@ -11,7 +11,12 @@ export type SessionCreate = Schemas["SessionCreate"];
 export type AnswerResult = Schemas["AnswerOut"];
 export type FinishResult = Schemas["FinishOut"];
 export type Settings = Schemas["SettingsOut"];
-export type SettingsUpdate = Schemas["SettingsIn"];
+export type SettingsUpdate = Omit<Schemas["SettingsIn"], "providers"> & {
+  providers?: Schemas["SettingsIn"]["providers"];
+};
+export type Provider = Schemas["ProviderOut"];
+export type ModelOption = Schemas["ModelOption"];
+export type ProviderModels = Schemas["ModelsOut"];
 export type LlmTestResult = Schemas["LLMTestOut"];
 export type Song = Schemas["SongOut"];
 export type SongCreate = Schemas["SongIn"];
@@ -20,6 +25,7 @@ export type SongAnalysis = Schemas["SongAnalysisOut"];
 export type ConfirmEntry = Schemas["ConfirmEntry"];
 export type ConfirmResult = Schemas["ConfirmOut"];
 export type Stats = Schemas["StatsOut"];
+export type LetterStatus = Schemas["LetterStatus"];
 
 /** Mirrors the backend limit; the API answers 413 above it. */
 export const MAX_LYRICS_CHARS = 20000;
@@ -74,6 +80,10 @@ export const health = (signal?: AbortSignal) =>
 export const getProgress = (signal?: AbortSignal) =>
   request<Progress>("/api/progress", { signal });
 
+/** Every alphabet letter with its mastery status: the data behind the alphabet map. */
+export const getLetterMap = (signal?: AbortSignal) =>
+  request<LetterStatus[]>("/api/progress/letters", { signal });
+
 export const getItems = (kind: string, signal?: AbortSignal) =>
   request<Item[]>(`/api/items?kind=${encodeURIComponent(kind)}`, { signal });
 
@@ -94,8 +104,18 @@ export const getSettings = (signal?: AbortSignal) =>
 export const putSettings = (body: SettingsUpdate) =>
   request<Settings>("/api/settings", send("PUT", body));
 
-export const testLlm = () =>
-  request<LlmTestResult>("/api/settings/test-llm", post());
+/** Models the provider offers for a key; send `apiKey` to try one before saving it. */
+export const listProviderModels = (providerId: string, apiKey?: string) =>
+  request<ProviderModels>(
+    `/api/settings/providers/${encodeURIComponent(providerId)}/models`,
+    post(apiKey ? { api_key: apiKey } : {}),
+  );
+
+export const testProvider = (providerId: string) =>
+  request<LlmTestResult>(
+    "/api/settings/test-llm",
+    post({ provider: providerId }),
+  );
 
 export const getSongs = (signal?: AbortSignal) =>
   request<Song[]>("/api/songs", { signal });

@@ -57,6 +57,8 @@ def main() -> None:
     if args.check_agents:
         from agno.agent import Agent
         from agno.models.anthropic import Claude
+        from agno.models.groq import Groq
+        from agno.models.openai import OpenAIChat
         from agno.team import Team
         from anthropic import Anthropic
 
@@ -66,6 +68,8 @@ def main() -> None:
             Team.__name__,
             Claude.__name__,
             Anthropic.__name__,
+            OpenAIChat.__name__,
+            Groq.__name__,
             file=sys.stderr,
         )
     saved = read_settings()

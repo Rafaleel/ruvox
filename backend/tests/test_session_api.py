@@ -115,3 +115,19 @@ def test_progress_and_items(client: TestClient) -> None:
     assert (progress["words_unlocked"], progress["words_total"]) == (0, 50)
     assert len(client.get("/api/items", params={"kind": "letter"}).json()) == 33
     assert len(client.get("/api/items", params={"kind": "word"}).json()) == 50
+
+
+def test_alphabet_map_reports_each_letter_status(client: TestClient) -> None:
+    letters = client.get("/api/progress/letters").json()
+    assert len(letters) == 33 and {entry["status"] for entry in letters} == {"new"}
+    assert {entry["group"] for entry in letters} == {1, 2, 3}
+    session = start(client)
+    first = session["questions"][0]
+    right = truth(client, first["id"]).answer
+    answer(client, session["session_id"], first["id"], right)
+    after = {
+        entry["id"]: entry["status"]
+        for entry in client.get("/api/progress/letters").json()
+    }
+    assert after[first["item_ids"][0]] == "learning"
+    assert list(after.values()).count("new") == 32

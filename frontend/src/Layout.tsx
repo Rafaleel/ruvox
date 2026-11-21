@@ -1,13 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
+import { Flame } from "lucide-react";
 import { useEffect } from "react";
-import { NavLink, Outlet, useLocation } from "react-router";
-
-const links = [
-  { to: "/", label: "Início", end: true },
-  { to: "/play", label: "Jogar", end: false },
-  { to: "/songs", label: "Músicas", end: false },
-  { to: "/progress", label: "Progresso", end: false },
-  { to: "/settings", label: "Configurações", end: false },
-];
+import { Link, Outlet, useLocation } from "react-router";
+import { getStats } from "./api/client";
+import { StampFrame } from "./components/art/StampFrame";
+import { Dock } from "./components/Dock";
+import { DockProvider } from "./components/DockProvider";
+import { Icon } from "./components/Icon";
 
 const titles: Record<string, string> = {
   "/play": "Jogar",
@@ -17,6 +16,47 @@ const titles: Record<string, string> = {
   "/alphabet": "Alfabeto",
 };
 
+/** Screens designed as wide compositions; every other screen is a reading column. */
+const wideRoutes = new Set([
+  "/",
+  "/progress",
+  "/alphabet",
+  "/play",
+  "/settings",
+  "/songs",
+]);
+
+/** Streak stamp at the right of the header; nothing if stats fail. */
+function StreakStamp() {
+  const stats = useQuery({
+    queryKey: ["stats"],
+    queryFn: ({ signal }) => getStats(signal),
+    retry: false,
+  });
+  if (!stats.data) return null;
+  const { streak } = stats.data;
+  const days = `${streak} ${streak === 1 ? "dia" : "dias"}`;
+  return (
+    <Link
+      to="/progress"
+      aria-label={`Sequência de ${days}. Ver progresso`}
+      className="stamp-in block rounded-[0.2em] text-sm transition-transform duration-150 ease-out-soft active:scale-[.97]"
+    >
+      <StampFrame
+        tilt
+        cut="paper"
+        className="flex items-center gap-2 px-3.5 py-1.5"
+      >
+        <Icon icon={Flame} size="1.125rem" className="text-gold" />
+        <span className="font-serif text-lg leading-none font-semibold">
+          {streak}
+        </span>
+        <span className="font-medium">{streak === 1 ? "dia" : "dias"}</span>
+      </StampFrame>
+    </Link>
+  );
+}
+
 export function Layout() {
   const { pathname } = useLocation();
   // Screen readers announce the page title on navigation in a single-page app.
@@ -25,43 +65,36 @@ export function Layout() {
     document.title = title ? `${title} · Ruvox` : "Ruvox";
   }, [pathname]);
 
+  const width = wideRoutes.has(pathname) ? "max-w-wide" : "max-w-4xl";
   return (
-    <div className="min-h-dvh md:flex">
-      <a
-        href="#conteudo"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-20 focus:rounded-lg focus:bg-accent focus:px-4 focus:py-2 focus:font-semibold focus:text-on-accent"
-      >
-        Pular para o conteúdo
-      </a>
-      <nav
-        aria-label="Navegação principal"
-        className="fixed inset-x-0 bottom-0 z-10 flex border-t border-line bg-paper md:sticky md:inset-x-auto md:top-0 md:bottom-auto md:h-dvh md:w-56 md:shrink-0 md:flex-col md:gap-1 md:border-t-0 md:border-r md:p-4"
-      >
-        <span className="hidden px-3 pb-4 text-2xl font-extrabold tracking-tight md:block">
-          Ruvox
-        </span>
-        {links.map(({ to, label, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              `flex min-h-14 flex-1 items-center justify-center px-0.5 text-xs font-semibold min-[400px]:text-sm focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent md:min-h-11 md:flex-none md:text-base md:justify-start md:rounded-lg md:px-3 ${
-                isActive ? "bg-surface text-accent" : "text-muted"
-              }`
-            }
-          >
-            {label}
-          </NavLink>
-        ))}
-      </nav>
-      <main
-        id="conteudo"
-        tabIndex={-1}
-        className="mx-auto w-full min-w-0 max-w-3xl px-5 pt-8 pb-28 outline-none md:flex-1 md:px-10 md:pb-10"
-      >
-        <Outlet />
-      </main>
-    </div>
+    <DockProvider>
+      <div className="min-h-dvh">
+        <a
+          href="#conteudo"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-70 focus:rounded-control focus:bg-accent focus:px-4 focus:py-2 focus:font-semibold focus:text-on-accent"
+        >
+          Pular para o conteúdo
+        </a>
+        <header
+          className={`mx-auto flex w-full items-center justify-between px-5 pt-5 min-[48rem]:px-10 min-[48rem]:pt-7 ${width}`}
+        >
+          <span className="border-l-2 border-accent pl-2.5 font-serif text-2xl leading-none font-semibold tracking-tight">
+            Ruvox
+          </span>
+          <StreakStamp />
+        </header>
+        <main
+          id="conteudo"
+          tabIndex={-1}
+          className={`@container mx-auto w-full min-w-0 px-5 pt-6 pb-[calc(7rem+env(safe-area-inset-bottom))] outline-none min-[48rem]:px-10 min-[48rem]:pt-8 ${width}`}
+        >
+          {/* Keyed by route so every screen enters with the page animation. */}
+          <div key={pathname} className="page-in">
+            <Outlet />
+          </div>
+        </main>
+        <Dock />
+      </div>
+    </DockProvider>
   );
 }
