@@ -198,3 +198,42 @@ def test_get_llm_picks_the_implementation_for_the_active_provider(
     assert get_llm(engine, "groq") is None  # a key without a chosen model stays offline
     monkeypatch.setenv("RUVOX_LLM_PROVIDER", "groq")
     assert get_llm(engine) is None
+
+
+def test_a_refused_key_is_tried_once_and_never_stored(
+    db: Session, api: tuple[FakeChatApi, str]
+) -> None:
+    state, base = api
+    state.respond = lambda body: (
+        401,
+        {
+            "error": {
+                "message": "Incorrect API key provided: key-123. Also sk-proj-****cdef",
+                "code": "invalid_api_key",
+            }
+        },
+    )
+    with pytest.raises(LLMUnavailable) as caught:
+        llm(db, "openai", base).run("ping", "ping", "hi", Ping)
+    assert len(state.requests) == 1  # a 401 is not a structured-output method problem
+    (row,) = db.exec(select(LLMCall)).all()
+    for text in (row.error, str(caught.value)):
+        assert "key-123" not in text and "sk-proj" not in text and "***" in text
+
+
+def test_a_server_error_or_a_limit_is_not_retried_with_another_method(
+    db: Session, api: tuple[FakeChatApi, str]
+) -> None:
+    state, base = api
+    state.respond = lambda body: (429, {"error": {"message": "Rate limit reached"}})
+    with pytest.raises(LLMUnavailable):
+        llm(db, "groq", base).run("ping", "ping", "hi", Ping)
+    assert len(state.requests) == 1
+
+
+def test_connection_errors_name_the_right_provider(db: Session) -> None:
+    from app.agents.llm import friendly_error
+
+    assert "OpenAI" in friendly_error("Connection error.", "OpenAI")
+    assert "Groq" in friendly_error("Request timed out.", "Groq")
+    assert "Anthropic" in friendly_error("Connection error.")

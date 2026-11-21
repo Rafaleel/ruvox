@@ -6,6 +6,7 @@ fall back to the no-LLM path (decision D11).
 """
 
 import logging
+import re
 import time
 from pathlib import Path
 from string import Template
@@ -36,7 +37,19 @@ PRICES_PER_MTOK: dict[str, tuple[float, float]] = {
 T = TypeVar("T", bound=BaseModel)
 
 
-def friendly_error(detail: str) -> str:
+KEY_LIKE = re.compile(r"\b(?:sk|gsk|pk)[-_][A-Za-z0-9_*.\-]{4,}")
+
+
+def redact(text: str, *secrets: str | None) -> str:
+    """Remove API keys from text before it is logged or stored. Providers sometimes quote
+    the key they rejected, in full or partly masked."""
+    for secret in secrets:
+        if secret:
+            text = text.replace(secret, "***")
+    return KEY_LIKE.sub("***", text)
+
+
+def friendly_error(detail: str, provider: str = "Anthropic") -> str:
     """A pt-BR explanation of an API failure; the raw detail stays in the log and table."""
     text = detail.lower()
     if (
@@ -54,7 +67,7 @@ def friendly_error(detail: str) -> str:
     if "429" in text or "529" in text or "rate" in text or "overloaded" in text:
         return "A API está sobrecarregada ou o limite de uso foi atingido. Tente de novo em instantes."
     if "timeout" in text or "timed out" in text or "connect" in text:
-        return "Sem conexão com a API da Anthropic. Confira a internet."
+        return f"Sem conexão com a API da {provider}. Confira a internet."
     if "400" in text or "invalid_request" in text:
         return "A API recusou o pedido. O detalhe está no registro do app."
     return "Não foi possível falar com o modelo agora."
@@ -63,9 +76,11 @@ def friendly_error(detail: str) -> str:
 class LLMUnavailable(RuntimeError):
     """No key, a timeout, an API error or an unusable answer."""
 
-    def __init__(self, detail: str, user_message: str | None = None) -> None:
+    def __init__(
+        self, detail: str, user_message: str | None = None, provider: str = "Anthropic"
+    ) -> None:
         super().__init__(detail)
-        self.user_message = user_message or friendly_error(detail)
+        self.user_message = user_message or friendly_error(detail, provider)
 
 
 class Ping(BaseModel):
@@ -94,6 +109,7 @@ class AgnoLLM:
     def __init__(self, engine: Engine, settings: Settings) -> None:
         self.engine = engine
         self.settings = settings
+        self.key = settings.api_key.get_secret_value() if settings.api_key else None
 
     def run(self, agent: str, prompt: str, user_input: str, schema: type[T]) -> T:
         model = self.settings.model
@@ -125,13 +141,13 @@ class AgnoLLM:
                     if isinstance(result.content, str)
                     else "the model did not return the expected structure"
                 )
-                raise LLMUnavailable(detail)
+                raise LLMUnavailable(redact(detail, self.key))
             return result.content
         except LLMUnavailable as exc:
             error = str(exc)
             raise
         except Exception as exc:
-            error = f"{type(exc).__name__}: {exc}"[:300]
+            error = redact(f"{type(exc).__name__}: {exc}", self.key)[:300]
             raise LLMUnavailable(error) from exc
         finally:
             self._record(agent, model, input_tokens, output_tokens, started, error)

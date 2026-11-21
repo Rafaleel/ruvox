@@ -192,3 +192,32 @@ def test_the_config_file_never_leaks_through_the_api(client: TestClient) -> None
         "/api/settings", json={"providers": {"anthropic": {"api_key": "sk-ant-zzz"}}}
     )
     assert "sk-ant-zzz" not in json.dumps(client.get("/api/settings").json())
+
+
+def test_an_unusable_active_provider_is_refused(client: TestClient) -> None:
+    refused = client.put("/api/settings", json={"active_provider": "groq"})
+    assert refused.status_code == 422 and "Groq" in refused.json()["detail"]
+    client.put("/api/settings", json={"providers": {"groq": {"api_key": "gsk-x"}}})
+    assert (
+        client.put("/api/settings", json={"active_provider": "groq"}).status_code == 422
+    )  # no model
+    ok = client.put(
+        "/api/settings",
+        json={
+            "active_provider": "groq",
+            "providers": {"groq": {"model": "some-model"}},
+        },
+    )
+    assert ok.status_code == 200 and ok.json()["active_provider"] == "groq"
+
+
+def test_an_unknown_provider_in_the_config_file_does_not_break_settings(
+    client: TestClient, tmp_path: object
+) -> None:
+    import os
+    from pathlib import Path
+
+    path = Path(os.environ["RUVOX_DATA_DIR"]) / "config.json"
+    path.write_text(json.dumps({"active_provider": "skynet", "providers": {}}))
+    body = client.get("/api/settings")
+    assert body.status_code == 200 and body.json()["active_provider"] == "anthropic"

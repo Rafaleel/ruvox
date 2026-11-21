@@ -141,3 +141,11 @@ def test_the_labels_say_who_owns_the_key() -> None:
         "openai": ("OpenAI", "ChatGPT"),
         "groq": ("Groq", "Groq"),
     }
+
+
+def test_a_json_list_instead_of_an_object_is_a_clear_error() -> None:
+    client = mock_client(
+        httpx.MockTransport(lambda r: httpx.Response(200, json=[1, 2]))
+    )
+    with pytest.raises(ProviderError, match="formato inesperado"):
+        list_models("openai", "k", client=client)

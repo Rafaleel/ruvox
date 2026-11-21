@@ -221,3 +221,16 @@ def test_friendly_error_messages(detail: str, expected: str) -> None:
     from app.agents.llm import friendly_error
 
     assert expected in friendly_error(detail)
+
+
+def test_redact_removes_keys_and_key_shapes() -> None:
+    from app.agents.llm import redact
+
+    text = "Incorrect API key provided: abc-secret-value. Try sk-ant-api03-XYZ or gsk_abcdef12345"
+    cleaned = redact(text, "abc-secret-value")
+    assert (
+        "abc-secret-value" not in cleaned
+        and "sk-ant" not in cleaned
+        and "gsk_" not in cleaned
+    )
+    assert redact("plain text") == "plain text"

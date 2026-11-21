@@ -19,6 +19,7 @@ from app.agents.llm import (
     friendly_error,
     load_prompt,
     log,
+    redact,
 )
 from app.agents.providers import PROVIDERS
 from app.models import LLMCall
@@ -32,6 +33,29 @@ METHODS: dict[str, tuple[str, ...]] = {
     "groq": ("json_schema", "function_calling"),
 }
 _working: dict[tuple[str, str], str] = {}
+
+# Error text that means "this model does not do that structured-output method".
+_METHOD_WORDS = (
+    "not support",
+    "unsupported",
+    "response_format",
+    "json_schema",
+    "tool",
+    "function",
+    "schema",
+)
+
+
+def _method_problem(exc: Exception) -> bool:
+    text = str(exc).lower()
+    status = getattr(exc, "status_code", None)
+    if status in (401, 403, 404, 408, 429) or (
+        isinstance(status, int) and status >= 500
+    ):
+        return False
+    if any(word in text for word in ("timeout", "timed out", "connect", "api key")):
+        return False
+    return status == 400 or any(word in text for word in _METHOD_WORDS)
 
 
 def build_chat_model(
@@ -91,8 +115,9 @@ class LangChainLLM:
             error = str(exc)
             raise
         except Exception as exc:
-            error = f"{type(exc).__name__}: {exc}"[:300]
-            raise LLMUnavailable(error, friendly_error(str(exc))) from exc
+            label = PROVIDERS[self.provider_id].label
+            error = redact(f"{type(exc).__name__}: {exc}", self.api_key)[:300]
+            raise LLMUnavailable(error, friendly_error(error, label), label) from exc
         finally:
             self._record(agent, tokens_in, tokens_out, started, error)
 
@@ -107,8 +132,9 @@ class LangChainLLM:
                 reply = chat.with_structured_output(
                     schema, method=method, include_raw=True
                 ).invoke(messages)
-            except Exception as exc:  # noqa: BLE001
-                # a structured-output method this model does not support: try the next one
+            except Exception as exc:
+                if not _method_problem(exc):
+                    raise  # a refused key, a limit or a timeout fails the same way twice
                 last = exc
                 continue
             parsed = reply.get("parsed")

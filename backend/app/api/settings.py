@@ -15,6 +15,7 @@ from app.api.sessions import Llm
 from app.config import (
     KEY_ENV,
     ProviderConfig,
+    Settings,
     effective_settings,
     read_settings,
     write_settings,
@@ -64,6 +65,24 @@ def known_provider(provider_id: str) -> str:
     return provider_id
 
 
+def _ensure_usable(stored: Settings) -> None:
+    """The active AI needs a key and a model (environment keys count)."""
+    provider_id = stored.active_provider
+    effective = stored.model_copy(deep=True)
+    if env_key := os.getenv(KEY_ENV[provider_id]):
+        config = effective.provider(provider_id).model_copy(
+            update={"api_key": SecretStr(env_key)}
+        )
+        effective.providers[provider_id] = config
+    config = effective.provider(provider_id)
+    if not (config.api_key and config.api_key.get_secret_value() and config.model):
+        raise HTTPException(
+            422,
+            f"Salve a chave e escolha um modelo da {PROVIDERS[provider_id].label} "
+            "antes de usar esta IA.",
+        )
+
+
 @router.get("", response_model=SettingsOut)
 def get_settings() -> SettingsOut:
     return current()
@@ -85,6 +104,7 @@ def put_settings(body: SettingsIn) -> SettingsOut:
         stored.providers[provider_id] = config
     if body.active_provider is not None:
         stored.active_provider = known_provider(body.active_provider)
+        _ensure_usable(stored)
     write_settings(stored)
     return current()
 

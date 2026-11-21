@@ -6,7 +6,7 @@ from tempfile import mkstemp
 from typing import Any
 
 from platformdirs import user_data_path
-from pydantic import BaseModel, SecretStr, model_validator
+from pydantic import BaseModel, SecretStr, field_validator, model_validator
 
 
 def data_dir() -> Path:
@@ -38,6 +38,12 @@ class Settings(BaseModel):
     lan_secret: str | None = (
         None  # signs the pairing cookie; rotating it unpairs everyone
     )
+
+    @field_validator("active_provider")
+    @classmethod
+    def known_provider(cls, value: str) -> str:
+        # an edited or newer config naming an unknown provider must not break Settings
+        return value if value in PROVIDER_IDS else "anthropic"
 
     @model_validator(mode="before")
     @classmethod

@@ -153,6 +153,10 @@ def list_models(
                     _explain(provider, response.status_code), response.status_code
                 )
             body = response.json()
+            if not isinstance(body, dict):
+                raise ProviderError(
+                    "A resposta do provedor veio num formato inesperado."
+                )
             models += parse_models(provider_id, body)
             if (
                 provider_id == "anthropic"
