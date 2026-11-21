@@ -83,7 +83,7 @@ function Mastery({ mastery }: { mastery: Stats["mastery"] }) {
           />
         ))}
       </div>
-      <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 @[24rem]:grid-cols-4">
+      <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 @[34rem]:grid-cols-4">
         {MASTERY.map((m) => (
           <div key={m.key}>
             <dt className="flex items-center gap-1.5 text-sm text-ink-2">
@@ -264,24 +264,30 @@ function ActivityChart({ days }: { days: Stats["days"] }) {
 function Streaks({ data }: { data: Stats }) {
   return (
     <div className="grid content-start gap-4">
-      <div className="grid grid-cols-2 gap-4 @[50rem]:grid-cols-1 @[50rem]:gap-5">
-        <div className="stamp-in">
+      <div className="grid grid-cols-2 items-center gap-4">
+        <div className="stamp-in h-full">
           <StampFrame
             tilt
-            className="flex h-full flex-col gap-2 p-5 @[32rem]:p-6"
+            className="flex h-full flex-col justify-between gap-3 p-4 @[32rem]:p-5"
           >
-            <Icon icon={Flame} size="2rem" className="text-gold" />
+            <p
+              aria-hidden="true"
+              className="flex items-center gap-1.5 text-sm font-semibold"
+            >
+              <Icon icon={Flame} className="text-gold" />
+              Sequência
+            </p>
             <h2 className="sr-only">
               Sequência: {plural(data.streak, "dia", "dias")}
             </h2>
             <p
               aria-hidden="true"
-              className="font-serif text-[clamp(3.5rem,18cqw,5rem)] leading-none font-semibold tracking-tight"
+              className="font-serif text-[clamp(3.25rem,16cqw,4.5rem)] leading-none font-semibold tracking-tight"
             >
               <CountUp value={data.streak} />
             </p>
-            <p aria-hidden="true" className="font-medium">
-              {data.streak === 1 ? "dia de sequência" : "dias de sequência"}
+            <p aria-hidden="true" className="text-sm font-medium">
+              {data.streak === 1 ? "dia seguido" : "dias seguidos"}
             </p>
           </StampFrame>
         </div>
@@ -289,15 +295,15 @@ function Streaks({ data }: { data: Stats }) {
           className="stamp-in grid place-items-center gap-1 text-center"
           style={stagger(1)}
         >
-          <Laurel className="w-[min(100%,11rem)]">
+          <Laurel className="w-[min(100%,10rem)]">
             <span
               aria-hidden="true"
-              className="font-serif text-5xl leading-none font-semibold tracking-tight text-gold-ink"
+              className="font-serif text-4xl leading-none font-semibold tracking-tight text-gold-ink"
             >
               {data.best_streak}
             </span>
           </Laurel>
-          <p className="font-serif text-h3 leading-tight font-semibold">
+          <p className="text-sm leading-snug font-semibold text-ink-2">
             Melhor sequência: {plural(data.best_streak, "dia", "dias")}
           </p>
         </div>
@@ -318,7 +324,7 @@ function Streaks({ data }: { data: Stats }) {
 /** Shown before the first answer: the notebook is still blank. */
 function BlankNotebook() {
   return (
-    <div className={cx(panel, "overflow-hidden p-0 @[32rem]:p-0")}>
+    <div className="overflow-hidden rounded-sheet bg-sheet shadow-card">
       <div
         aria-hidden="true"
         className="bg-linear-to-b from-sheet-2 to-sheet px-[4%] pt-6"
@@ -368,7 +374,7 @@ export function Progress() {
         </div>
       )}
       {data && (
-        <div className="@container mt-8 grid gap-6 @[50rem]:grid-cols-12 @[50rem]:gap-8">
+        <div className="@container mt-8 grid gap-6 @[50rem]:grid-cols-12 @[50rem]:content-start @[50rem]:gap-8">
           <div
             className="rise @[50rem]:col-span-5 @[50rem]:col-start-8 @[50rem]:row-start-1"
             style={stagger(0)}
@@ -376,7 +382,7 @@ export function Progress() {
             {blank ? <BlankNotebook /> : <Streaks data={data} />}
           </div>
           <div
-            className="rise @[50rem]:col-span-7 @[50rem]:col-start-1 @[50rem]:row-start-1"
+            className="rise @[50rem]:col-span-7 @[50rem]:col-start-1 @[50rem]:row-span-2 @[50rem]:row-start-1"
             style={stagger(1)}
           >
             <AlphabetMap className="h-full" />
@@ -385,7 +391,10 @@ export function Progress() {
             <>
               <section
                 aria-labelledby="mastery-title"
-                className={cx(panel, "rise @[50rem]:col-span-5")}
+                className={cx(
+                  panel,
+                  "rise @[50rem]:col-span-5 @[50rem]:col-start-8 @[50rem]:row-start-2",
+                )}
                 style={stagger(2)}
               >
                 <h2 id="mastery-title" className="mb-4 text-h3">
@@ -395,7 +404,7 @@ export function Progress() {
               </section>
               <section
                 aria-labelledby="activity-title"
-                className={cx(panel, "rise @[50rem]:col-span-7")}
+                className={cx(panel, "rise @[50rem]:col-span-12")}
                 style={stagger(3)}
               >
                 <h2 id="activity-title" className="mb-3 text-h3">

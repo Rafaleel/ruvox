@@ -24,7 +24,7 @@ function Hero({ firstTime }: { firstTime: boolean }) {
         aria-hidden="true"
         className="bg-linear-to-b from-sheet-2 to-sheet px-[4%] pt-6"
       >
-        <DomeSkyline className="block w-full" />
+        <DomeSkyline className="mx-auto block max-h-[9.5rem] w-full" />
       </div>
       <div className="margin-rule relative flex flex-1 flex-col pt-2 pr-7 pb-8 pl-12 @[30rem]:pl-14">
         <div aria-hidden="true" className="ruled absolute inset-0" />
@@ -34,7 +34,7 @@ function Hero({ firstTime }: { firstTime: boolean }) {
         />
         <p
           lang="ru"
-          className="relative font-serif text-[clamp(4rem,21cqw,7.25rem)] leading-[1.05] font-semibold tracking-tight"
+          className="relative font-serif text-[clamp(4rem,21cqw,6rem)] leading-[1.05] font-semibold tracking-tight"
         >
           Привет
         </p>
@@ -61,7 +61,9 @@ function Hero({ firstTime }: { firstTime: boolean }) {
             Jogar agora
           </Link>
           <p className="mt-2.5 text-sm text-ink-3">
-            Leva uns 5 minutos, no seu ritmo.
+            {firstTime
+              ? "Sem pressa: você pode parar quando quiser."
+              : "Leva uns 5 minutos, no seu ritmo."}
           </p>
         </div>
         <NotebookCorner />
@@ -74,7 +76,7 @@ const card =
   "flex flex-col rounded-card bg-sheet p-4 shadow-card @[24rem]:p-5 @[40rem]:p-6";
 const label = "text-sm font-medium text-ink-2";
 const figure =
-  "font-serif text-[2.75rem] leading-none font-semibold tracking-tight text-ink";
+  "font-serif text-[2.75rem] leading-none font-semibold tracking-tight text-ink @[40rem]:text-[3.75rem]";
 
 function StatCards({
   data,

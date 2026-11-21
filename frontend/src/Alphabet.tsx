@@ -33,7 +33,7 @@ export function Alphabet() {
       <div className="relative">
         <GhostLetter
           letter="Ш"
-          className="-top-[40%] right-0 w-[min(22rem,60%)]"
+          className="-top-[25%] right-[4%] w-[min(15rem,40%)]"
         />
         <PageHeader
           eyebrow="Consulta"
