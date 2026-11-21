@@ -17,14 +17,15 @@ import {
 import { Badge } from "./components/Badge";
 import { Button } from "./components/Button";
 import { Card } from "./components/Card";
+import { ConfirmPanel } from "./components/ConfirmPanel";
 import { cx } from "./components/cx";
 import { CyrillicKeyboard } from "./components/CyrillicKeyboard";
+import { useHideDock } from "./components/DockProvider";
 import { ErrorMessage } from "./components/ErrorMessage";
 import { Flashcard } from "./components/Flashcard";
 import { Icon } from "./components/Icon";
 import { stagger } from "./components/motion";
 import { PairsGame } from "./components/PairsGame";
-import { ProgressBar } from "./components/ProgressBar";
 import { SourceBadge } from "./components/SourceBadge";
 import { Result } from "./Result";
 
@@ -43,15 +44,30 @@ function heroOf(prompt: string): string | null {
   return null;
 }
 
-/** Hero scale of the design system: letters 72 to 96px, words 44 to 56px. */
-const heroClass = (text: string) =>
-  [...text].length <= 3
-    ? "text-letter sm:text-letter-hero"
-    : "text-[2.75rem] sm:text-[3.5rem]";
+/** Hero scale: letters 6 to 9rem, short words 3.5 to 5.5rem, long quotes smaller. */
+const heroClass = (text: string) => {
+  const length = [...text].length;
+  if (length <= 3) return "text-[clamp(6rem,14cqw,9rem)]";
+  if (length <= 8) return "text-[clamp(3.5rem,9cqw,5.5rem)]";
+  return "text-[clamp(2.25rem,5.5cqw,3.5rem)]";
+};
 
-// On phones the next action floats just above the tab bar.
-const stickyBar =
-  "sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[5] -mx-5 mt-4 bg-linear-to-t from-paper from-70% to-transparent px-5 pt-6 pb-2 md:bottom-4 md:mx-0 md:bg-none md:p-0";
+/** The notebook's red-pen verdict in the corner of the question card. */
+function Verdict({ correct }: { correct: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cx(
+        "absolute top-4 right-4 z-10 grid size-12 place-items-center rounded-full",
+        correct
+          ? "stamp-in bg-success-soft text-success"
+          : "rise bg-danger-soft text-danger",
+      )}
+    >
+      <Icon icon={correct ? Check : X} size={28} strokeWidth={2.5} />
+    </span>
+  );
+}
 
 export function Quiz({
   session,
@@ -65,6 +81,7 @@ export function Quiz({
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [typed, setTyped] = useState("");
+  const [leaving, setLeaving] = useState(false);
   const shownAt = useRef(performance.now());
   const question = queue[index];
 
@@ -86,6 +103,9 @@ export function Quiz({
     mutationFn: () => finishSession(session.session_id),
   });
 
+  // Focus mode while answering; the dock comes back on the result screen.
+  useHideDock(!finish.isSuccess);
+
   const choose = (option: string) => {
     if (feedback || answer.isPending) return;
     answer.mutate({
@@ -106,10 +126,26 @@ export function Quiz({
     }
   };
 
+  // Nothing answered yet means nothing to lose: leave without asking.
+  const exit = () => (index > 0 || feedback ? setLeaving(true) : onRestart());
+  const stay = () => {
+    setLeaving(false);
+    requestAnimationFrame(() =>
+      document.getElementById("session-exit")?.focus(),
+    );
+  };
+
   // Re-registered every render so the handler always sees the current state.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || !finish.isIdle)
+      if (
+        e.metaKey ||
+        e.ctrlKey ||
+        e.altKey ||
+        e.repeat ||
+        leaving ||
+        !finish.isIdle
+      )
         return;
       if (!feedback) {
         // Digits only pick options; flip, pairs and text answers use their own inputs.
@@ -143,7 +179,7 @@ export function Quiz({
     return (
       <p
         role="status"
-        className="flex items-center justify-center gap-2.5 py-24 text-ink-2"
+        className="flex items-center justify-center gap-2.5 py-24 text-lg text-ink-2"
       >
         <Icon icon={Loader2} className="animate-spin" />
         Calculando o resultado…
@@ -156,24 +192,65 @@ export function Quiz({
 
   const result = feedback?.result;
   const hero = question.input_kind === "flip" ? null : heroOf(question.prompt);
+  const done = index + (feedback ? 1 : 0);
   return (
-    <>
-      <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="flex items-center gap-2 font-semibold text-ink-2">
-          Pergunta {index + 1} de {queue.length}
-          <SourceBadge source={session.source} />
-        </span>
-        <Badge tone="gold" icon={Check} className="px-3 py-1 text-sm">
+    <div className="mx-auto w-full max-w-[48rem]">
+      <header className="flex items-center gap-3 @[34rem]:gap-4">
+        <Button
+          id="session-exit"
+          variant="ghost"
+          icon={X}
+          className="-ml-2 shrink-0 px-2.5"
+          onClick={exit}
+        >
+          Sair<span className="sr-only"> da sessão</span>
+        </Button>
+        <div className="min-w-0 flex-1">
+          <div className="mb-1.5 flex items-center gap-2 text-sm font-semibold text-ink-2">
+            <span>
+              Pergunta {index + 1} de {queue.length}
+            </span>
+            <SourceBadge source={session.source} />
+          </div>
+          <div
+            role="progressbar"
+            aria-label="Progresso da sessão"
+            aria-valuenow={done}
+            aria-valuemin={0}
+            aria-valuemax={queue.length}
+            className="h-2 w-full overflow-hidden rounded-full bg-sheet-2 shadow-[inset_0_0_0_1px_var(--hairline)]"
+          >
+            <div
+              className="h-full origin-left rounded-full bg-accent transition-transform duration-300 ease-out-soft"
+              style={{
+                transform: `scaleX(${queue.length ? Math.min(1, done / queue.length) : 0})`,
+              }}
+            />
+          </div>
+        </div>
+        <Badge
+          tone="gold"
+          icon={Check}
+          className="shrink-0 px-3 py-1.5 text-sm"
+        >
           Acertos: {score}
         </Badge>
-      </div>
-      <div className="mt-3">
-        <ProgressBar
-          value={index + (feedback ? 1 : 0)}
-          max={queue.length}
-          label="Progresso da sessão"
-        />
-      </div>
+      </header>
+
+      {leaving && (
+        <ConfirmPanel
+          title="Sair da sessão?"
+          confirmLabel="Sair"
+          onConfirm={onRestart}
+          onCancel={stay}
+        >
+          <p className="text-ink-2">
+            As respostas que você já deu ficam salvas, mas esta sessão não conta
+            para a sua sequência.
+          </p>
+        </ConfirmPanel>
+      )}
+
       {question.input_kind === "flip" ? (
         <Flashcard
           key={index}
@@ -186,14 +263,23 @@ export function Quiz({
         <Card
           key={`prompt-${index}`}
           margin
-          className="rise mt-6 rounded-hero py-7 pr-6 md:py-8"
+          className={cx(
+            "rise relative mt-5 overflow-hidden rounded-hero py-7 pr-6 pl-12 @[34rem]:pl-16",
+            hero ? "@[34rem]:py-10" : "@[34rem]:py-9",
+          )}
         >
+          <div
+            aria-hidden="true"
+            className="ruled pointer-events-none absolute inset-0"
+          />
+          {result && <Verdict correct={result.correct} />}
           <h1
             className={cx(
+              "relative",
               hero
-                ? "font-sans text-base font-medium text-ink-2"
-                : "text-h1 text-ink md:text-[2.25rem]",
-              !hero && question.prompt.length > 40 && "text-h2 md:text-h1",
+                ? "font-sans text-lg font-medium text-ink-2"
+                : "text-h2 @[34rem]:text-h1 @[44rem]:text-[2.25rem]",
+              !hero && question.prompt.length > 40 && "@[34rem]:text-h2",
             )}
           >
             {question.prompt}
@@ -203,7 +289,7 @@ export function Quiz({
               lang="ru"
               aria-hidden="true"
               className={cx(
-                "mt-3 font-serif leading-tight font-semibold break-words text-ink",
+                "relative mt-2 font-serif leading-[1.1] font-semibold tracking-tight break-words text-ink",
                 heroClass(hero),
               )}
             >
@@ -218,7 +304,7 @@ export function Quiz({
       {question.input_kind === "text" && (
         <form
           key={index}
-          className="mt-4 grid gap-3"
+          className="rise mt-4 grid gap-3"
           onSubmit={(e) => {
             e.preventDefault();
             if (typed.trim()) choose(typed.trim());
@@ -238,18 +324,18 @@ export function Quiz({
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
               className={cx(
-                "min-h-16 w-full rounded-card border-2 bg-sheet-2 px-4 font-serif text-3xl font-semibold text-ink transition-colors",
+                "min-h-[4.5rem] w-full rounded-card border-2 bg-sheet-2 px-5 font-serif text-[2rem] font-semibold text-ink transition-colors",
                 !result
-                  ? "border-rule"
+                  ? "border-rule focus:border-accent"
                   : result.correct
-                    ? "border-success bg-success-soft pr-12"
-                    : "border-danger bg-danger-soft pr-12",
+                    ? "border-success bg-success-soft pr-14"
+                    : "border-danger bg-danger-soft pr-14",
               )}
             />
             {result && (
               <Icon
                 icon={result.correct ? CircleCheck : CircleX}
-                size={24}
+                size={28}
                 className={cx(
                   "absolute top-1/2 right-4 -translate-y-1/2",
                   result.correct ? "text-success" : "text-danger",
@@ -276,7 +362,10 @@ export function Quiz({
         </form>
       )}
       {question.input_kind === "choice" && (
-        <ul key={`options-${index}`} className="mt-4 grid gap-3 md:grid-cols-2">
+        <ul
+          key={`options-${index}`}
+          className="mt-4 grid gap-3 @[34rem]:grid-cols-2"
+        >
           {question.options.map((option, i) => {
             const right =
               !!feedback && option === feedback.result.correct_answer;
@@ -291,10 +380,10 @@ export function Quiz({
                   disabled={!!result || answer.isPending}
                   onClick={() => choose(option)}
                   className={cx(
-                    "group flex min-h-14 w-full items-center gap-3 rounded-card px-3 py-2.5 text-left",
+                    "group flex min-h-[4.5rem] w-full items-center gap-3.5 rounded-card px-3.5 py-3 text-left",
                     "transition-[transform,box-shadow,background-color] duration-150 ease-out-soft",
                     !feedback &&
-                      "bg-sheet text-ink shadow-card hover:-translate-y-px hover:shadow-[0_0_0_1px_var(--rule)] active:scale-[.98] disabled:pointer-events-none",
+                      "bg-sheet text-ink shadow-card hover:-translate-y-0.5 hover:shadow-[0_0_0_1.5px_var(--rule)] active:scale-[.98] disabled:pointer-events-none",
                     right &&
                       cx(
                         "bg-success-soft text-success shadow-[0_0_0_2px_var(--success)]",
@@ -311,10 +400,10 @@ export function Quiz({
                   <span
                     aria-hidden="true"
                     className={cx(
-                      "grid size-8 shrink-0 place-items-center rounded-control text-sm font-semibold",
+                      "grid size-9 shrink-0 place-items-center rounded-[0.5rem] border text-base font-semibold",
                       right || wrong
-                        ? "bg-sheet/70 text-current"
-                        : "bg-sheet-2 text-ink-2 group-disabled:bg-sheet",
+                        ? "border-current/40 bg-sheet/60 text-current"
+                        : "border-rule/60 bg-paper text-ink-2 shadow-[0_0.1875rem_0_var(--hairline)] group-disabled:shadow-none",
                     )}
                   >
                     {i + 1}
@@ -323,16 +412,18 @@ export function Quiz({
                     lang={russian ? "ru" : undefined}
                     className={cx(
                       "min-w-0 flex-1 font-semibold break-words",
-                      russian ? "font-serif text-2xl" : "text-lg",
+                      russian
+                        ? "font-serif text-[1.75rem] leading-tight"
+                        : "text-lg leading-snug",
                     )}
                   >
                     {option}
                   </span>
                   {right && (
-                    <Icon icon={CircleCheck} size={24} className="shrink-0" />
+                    <Icon icon={CircleCheck} size={26} className="shrink-0" />
                   )}
                   {wrong && (
-                    <Icon icon={CircleX} size={24} className="shrink-0" />
+                    <Icon icon={CircleX} size={26} className="shrink-0" />
                   )}
                   {pending && (
                     <Icon
@@ -346,53 +437,75 @@ export function Quiz({
           })}
         </ul>
       )}
-      <div aria-live="polite" className={result ? "mt-4" : undefined}>
+      <div
+        aria-live="polite"
+        className={
+          result
+            ? "sticky bottom-[calc(1rem+env(safe-area-inset-bottom))] z-10 mt-5"
+            : undefined
+        }
+      >
         {result && (
           <div
             className={cx(
-              "rise rounded-card p-4",
-              result.correct ? "bg-success-soft" : "bg-danger-soft",
+              "rise flex flex-col gap-4 rounded-card p-4 shadow-float ring-2 @[34rem]:flex-row @[34rem]:items-center @[34rem]:gap-5 @[34rem]:p-5",
+              result.correct
+                ? "bg-success-soft ring-success/50"
+                : "bg-danger-soft ring-danger/50",
             )}
           >
-            <p
-              className={cx(
-                "flex items-center gap-2 text-lg font-bold",
-                result.correct ? "text-success" : "text-danger",
-              )}
-            >
-              <Icon icon={result.correct ? CircleCheck : X} size={22} />
-              {result.correct ? "Correto!" : "Errou."}
-            </p>
-            {/* Self-graded and pairs questions have no single correct answer. */}
-            {(question.input_kind === "choice" ||
-              question.input_kind === "text") && (
-              <p className="mt-1 text-ink">
-                Resposta certa:{" "}
-                <strong
-                  lang={CYRILLIC.test(result.correct_answer) ? "ru" : undefined}
-                  className="text-lg"
+            <div className="flex min-w-0 flex-1 items-start gap-3.5">
+              <span
+                aria-hidden="true"
+                className={cx(
+                  "grid size-11 shrink-0 place-items-center rounded-full bg-sheet/70",
+                  result.correct ? "stamp-in text-success" : "text-danger",
+                )}
+              >
+                <Icon
+                  icon={result.correct ? CircleCheck : CircleX}
+                  size={28}
+                />
+              </span>
+              <div className="min-w-0">
+                <p
+                  className={cx(
+                    "font-serif text-2xl leading-tight font-semibold",
+                    result.correct ? "text-success" : "text-danger",
+                  )}
                 >
-                  {result.correct_answer}
-                </strong>
-              </p>
-            )}
-            <p className="mt-1 text-ink-2">{result.explanation}</p>
+                  {result.correct ? "Correto!" : "Errou."}
+                </p>
+                {/* Self-graded and pairs questions have no single correct answer. */}
+                {(question.input_kind === "choice" ||
+                  question.input_kind === "text") && (
+                  <p className="mt-1 text-ink">
+                    Resposta certa:{" "}
+                    <strong
+                      lang={
+                        CYRILLIC.test(result.correct_answer) ? "ru" : undefined
+                      }
+                      className="font-serif text-xl"
+                    >
+                      {result.correct_answer}
+                    </strong>
+                  </p>
+                )}
+                <p className="mt-1 text-ink-2">{result.explanation}</p>
+              </div>
+            </div>
+            <Button
+              autoFocus
+              size="lg"
+              className="w-full shrink-0 @[34rem]:w-auto @[34rem]:min-w-44"
+              onClick={next}
+            >
+              Próxima
+              <Icon icon={ArrowRight} />
+            </Button>
           </div>
         )}
       </div>
-      {result && (
-        <div className={stickyBar}>
-          <Button
-            autoFocus
-            size="lg"
-            className="w-full md:ml-auto md:flex md:w-72"
-            onClick={next}
-          >
-            Próxima
-            <Icon icon={ArrowRight} />
-          </Button>
-        </div>
-      )}
       {answer.isError && (
         <div className="mt-4">
           <ErrorMessage
@@ -401,6 +514,6 @@ export function Quiz({
           />
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -307,3 +307,41 @@ body::before {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Flashcard flip: a rotation only. For reduced motion the rotation is off and
+   the back face fades in with an animation (transitions are zeroed above). */
+.flip-scene {
+  perspective: 75rem;
+}
+.flip-card {
+  transform-style: preserve-3d;
+  transition: transform 280ms var(--ease-out-soft);
+}
+.flip-card[data-flipped="true"] {
+  transform: rotateY(180deg);
+}
+.flip-face {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.flip-face-back {
+  transform: rotateY(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .flip-card,
+  .flip-card[data-flipped="true"] {
+    transform: none;
+    transform-style: flat;
+  }
+  .flip-face {
+    -webkit-backface-visibility: visible;
+    backface-visibility: visible;
+  }
+  .flip-face-back {
+    transform: none;
+    animation: fade 200ms var(--ease-out-soft) backwards;
+  }
+  .flip-card[data-flipped="true"] .flip-face-front {
+    visibility: hidden;
+  }
+}

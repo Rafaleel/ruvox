@@ -1,17 +1,41 @@
 import { Check, RotateCw, X } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { Question } from "../api/client";
 import { Button } from "./Button";
 import { cx } from "./cx";
 import { Icon } from "./Icon";
 
-const softButton =
-  "inline-flex min-h-13 items-center justify-center gap-2 rounded-control px-6 py-2 text-lg font-semibold select-none " +
-  "transition-[transform,filter] duration-150 ease-out-soft active:scale-[.97] hover:brightness-95 " +
+const verdictButton =
+  "inline-flex min-h-16 items-center justify-center gap-2.5 rounded-card px-6 py-2 text-xl font-semibold select-none " +
+  "transition-[transform,filter] duration-150 ease-out-soft hover:-translate-y-0.5 active:scale-[.97] " +
   "disabled:pointer-events-none disabled:opacity-50";
 
-const face =
-  "margin-rule grid [grid-area:1/1] place-items-center rounded-hero bg-sheet py-8 pr-6 pl-12 text-center shadow-card backface-hidden";
+/** One face of the card: paper with the margin rule and ruled lines. */
+function Face({
+  side,
+  hidden,
+  children,
+}: {
+  side: "front" | "back";
+  hidden?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      aria-hidden={hidden || undefined}
+      className={cx(
+        "flip-face margin-rule relative grid [grid-area:1/1] place-items-center overflow-hidden rounded-hero bg-sheet py-10 pr-6 pl-12 text-center shadow-card @[34rem]:pl-16",
+        side === "front" ? "flip-face-front" : "flip-face-back",
+      )}
+    >
+      <div
+        aria-hidden="true"
+        className="ruled pointer-events-none absolute inset-0"
+      />
+      <div className="relative">{children}</div>
+    </div>
+  );
+}
 
 /** Self-graded card: flip to see the answer, then say whether you knew it. */
 export function Flashcard({
@@ -27,48 +51,49 @@ export function Flashcard({
 }) {
   const [flipped, setFlipped] = useState(false);
   const showBack = flipped || done;
+  const short = [...question.prompt].length <= 4;
   return (
     <>
-      <div className="mt-6 [perspective:1200px]">
+      <div className="flip-scene mt-5">
         <div
-          className={cx(
-            "grid min-h-72 transform-3d transition-transform duration-300 ease-out-soft",
-            showBack && "rotate-y-180",
-          )}
+          data-flipped={showBack}
+          className="flip-card grid min-h-[22rem] @[34rem]:min-h-[26rem]"
         >
-          <div className={face} aria-hidden={showBack || undefined}>
-            <div>
+          <Face side="front" hidden={showBack}>
+            <p className="text-sm font-semibold tracking-wide text-accent uppercase">
+              Cartão
+            </p>
+            <p
+              lang="ru"
+              className={cx(
+                "mt-3 font-serif leading-[1.1] font-semibold tracking-tight break-words text-ink",
+                short
+                  ? "text-[clamp(6rem,14cqw,9rem)]"
+                  : "text-[clamp(2.75rem,8cqw,5rem)]",
+              )}
+            >
+              {question.prompt}
+            </p>
+            <p className="mt-5 text-ink-3">
+              Lembra o que significa? Vire para conferir.
+            </p>
+          </Face>
+          {showBack && (
+            <Face side="back">
+              <p className="text-sm font-semibold tracking-wide text-accent uppercase">
+                Significado
+              </p>
               <p
                 lang="ru"
-                className={cx(
-                  "font-serif leading-none font-semibold break-words text-ink",
-                  [...question.prompt].length <= 4
-                    ? "text-letter-hero"
-                    : "text-[2.75rem] sm:text-[3.5rem]",
-                )}
+                aria-hidden="true"
+                className="mt-2 font-serif text-3xl leading-none text-ink-3"
               >
                 {question.prompt}
               </p>
-              <p className="mt-6 text-sm text-ink-3">
-                Lembra o que significa? Vire para conferir.
+              <p className="mt-6 font-serif text-[clamp(1.75rem,5cqw,2.75rem)] leading-tight font-semibold text-balance text-ink">
+                {question.reveal}
               </p>
-            </div>
-          </div>
-          {showBack && (
-            <div className={cx(face, "rotate-y-180")}>
-              <div>
-                <p
-                  lang="ru"
-                  aria-hidden="true"
-                  className="font-serif text-2xl leading-none text-ink-3"
-                >
-                  {question.prompt}
-                </p>
-                <p className="mt-5 text-2xl leading-snug font-semibold text-ink">
-                  {question.reveal}
-                </p>
-              </div>
-            </div>
+            </Face>
           )}
         </div>
       </div>
@@ -76,24 +101,24 @@ export function Flashcard({
         <Button
           size="lg"
           icon={RotateCw}
-          className="mt-4 w-full md:mx-auto md:flex md:w-72"
+          className="mx-auto mt-5 flex w-full @[34rem]:w-80"
           onClick={() => setFlipped(true)}
         >
           Virar
         </Button>
       )}
       {flipped && !done && (
-        <div className="mt-4 grid grid-cols-2 gap-3 md:mx-auto md:max-w-md">
+        <div className="rise mx-auto mt-5 grid max-w-xl grid-cols-2 gap-3">
           <button
             type="button"
             disabled={disabled}
             onClick={() => onAnswer("missed")}
             className={cx(
-              softButton,
-              "bg-danger-soft text-danger shadow-[inset_0_0_0_1px_var(--danger)]",
+              verdictButton,
+              "bg-danger-soft text-danger shadow-[inset_0_0_0_2px_var(--danger)]",
             )}
           >
-            <Icon icon={X} />
+            <Icon icon={X} size={24} strokeWidth={2.25} />
             Errei
           </button>
           <button
@@ -101,11 +126,11 @@ export function Flashcard({
             disabled={disabled}
             onClick={() => onAnswer("knew")}
             className={cx(
-              softButton,
-              "bg-success-soft text-success shadow-[inset_0_0_0_1px_var(--success)]",
+              verdictButton,
+              "bg-success-soft text-success shadow-[inset_0_0_0_2px_var(--success)]",
             )}
           >
-            <Icon icon={Check} />
+            <Icon icon={Check} size={24} strokeWidth={2.25} />
             Sabia
           </button>
         </div>
