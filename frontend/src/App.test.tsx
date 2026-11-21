@@ -85,6 +85,7 @@ it("goes back to the pairing page when any request answers 401", async () => {
         // The first answer says paired; after the 401 the cookie is gone.
         return Response.json({ required: true, paired: statusCalls === 1 });
       }
+      if (url === "/api/progress/letters") return Response.json([]);
       if (url === "/api/progress")
         return Response.json(
           { detail: "Pareie este celular." },

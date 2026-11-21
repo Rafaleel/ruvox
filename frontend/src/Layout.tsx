@@ -35,7 +35,11 @@ function StreakStamp() {
       aria-label={`Sequência de ${days}. Ver progresso`}
       className="stamp-in block rounded-[0.2em] text-sm transition-transform duration-150 ease-out-soft active:scale-[.97]"
     >
-      <StampFrame tilt className="flex items-center gap-2 px-3.5 py-1.5">
+      <StampFrame
+        tilt
+        cut="paper"
+        className="flex items-center gap-2 px-3.5 py-1.5"
+      >
         <Icon icon={Flame} size="1.125rem" className="text-gold" />
         <span className="font-serif text-lg leading-none font-semibold">
           {streak}

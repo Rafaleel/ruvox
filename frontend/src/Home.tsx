@@ -1,20 +1,179 @@
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Flame, Play } from "lucide-react";
+import { ArrowRight, Flame, Play } from "lucide-react";
 import { Link } from "react-router";
-import { getProgress, getStats, health } from "./api/client";
+import { getProgress, getStats, health, type Progress } from "./api/client";
+import { AlphabetMap } from "./components/AlphabetMap";
+import { DomeSkyline } from "./components/art/DomeSkyline";
+import { GhostLetter } from "./components/art/GhostLetter";
+import { NotebookCorner } from "./components/art/NotebookCorner";
+import { StampFrame } from "./components/art/StampFrame";
 import { buttonClasses } from "./components/Button";
-import { Card } from "./components/Card";
+import { CountUp } from "./components/CountUp";
 import { ErrorMessage } from "./components/ErrorMessage";
 import { Icon } from "./components/Icon";
 import { stagger } from "./components/motion";
-import { ProgressRing } from "./components/ProgressRing";
-import { Stat } from "./components/Stat";
 
-const GROUP_HINTS: Record<number, string> = {
-  1: "iguais às nossas",
-  2: "parecem, mas não são",
-  3: "letras novas",
-};
+function Hero({ firstTime }: { firstTime: boolean }) {
+  return (
+    <section
+      aria-labelledby="home-title"
+      className="rise @container relative flex flex-col overflow-hidden rounded-sheet bg-sheet shadow-card"
+      style={stagger(0)}
+    >
+      <div
+        aria-hidden="true"
+        className="bg-linear-to-b from-sheet-2 to-sheet px-[4%] pt-6"
+      >
+        <DomeSkyline className="block w-full" />
+      </div>
+      <div className="margin-rule relative flex flex-1 flex-col pt-2 pr-7 pb-8 pl-12 @[30rem]:pl-14">
+        <div aria-hidden="true" className="ruled absolute inset-0" />
+        <GhostLetter
+          letter="Я"
+          className="-right-[12%] -bottom-[14%] w-[58%]"
+        />
+        <p
+          lang="ru"
+          className="relative font-serif text-[clamp(4rem,21cqw,7.25rem)] leading-[1.05] font-semibold tracking-tight"
+        >
+          Привет
+        </p>
+        <p className="relative mt-1 w-fit rounded-full bg-sheet-2 px-3 py-0.5 text-sm font-medium text-ink-2 shadow-[inset_0_0_0_1px_var(--hairline)]">
+          pri-VIÉT
+        </p>
+        <h1
+          id="home-title"
+          className="relative mt-5 text-[clamp(1.9375rem,7cqw,2.5rem)] leading-[1.1] tracking-tight"
+        >
+          Vamos praticar?
+        </h1>
+        <p className="relative mt-3 max-w-[30ch] text-ink-2">
+          {firstTime
+            ? "Sua primeira sessão leva uns 5 minutos. Começamos pelas letras que você já conhece."
+            : "Uma sessão curta por dia vale mais que uma longa por semana."}
+        </p>
+        <div className="relative mt-auto pt-6">
+          <Link
+            to="/play"
+            className={`${buttonClasses("primary", "lg")} w-full @[30rem]:w-auto @[30rem]:min-w-60`}
+          >
+            <Icon icon={Play} fill="currentColor" />
+            Jogar agora
+          </Link>
+          <p className="mt-2.5 text-sm text-ink-3">
+            Leva uns 5 minutos, no seu ritmo.
+          </p>
+        </div>
+        <NotebookCorner />
+      </div>
+    </section>
+  );
+}
+
+const card =
+  "flex flex-col rounded-card bg-sheet p-4 shadow-card @[24rem]:p-5 @[40rem]:p-6";
+const label = "text-sm font-medium text-ink-2";
+const figure =
+  "font-serif text-[2.75rem] leading-none font-semibold tracking-tight text-ink";
+
+function StatCards({
+  data,
+  streak,
+}: {
+  data: Progress;
+  streak: number | undefined;
+}) {
+  const share = data.words_total
+    ? Math.min(1, data.words_unlocked / data.words_total)
+    : 0;
+  return (
+    <div
+      className={`rise @container grid gap-3 ${streak === undefined ? "grid-cols-2" : "grid-cols-3"}`}
+      style={stagger(2)}
+    >
+      <div className={card}>
+        <p className={label}>Para revisar</p>
+        <p className={`${figure} mt-3`}>
+          <CountUp value={data.due_count} />
+        </p>
+        <p className="mt-auto pt-2 text-sm text-ink-3">
+          {data.due_count === 1 ? "item agora" : "itens agora"}
+        </p>
+      </div>
+      {streak !== undefined && (
+        <Link
+          to="/progress"
+          aria-label={`Sequência: ${streak} ${streak === 1 ? "dia" : "dias"}`}
+          className="stamp-in lift block rounded-[0.2em]"
+        >
+          <StampFrame className="flex h-full flex-col p-4 @[24rem]:p-5">
+            <p className="flex items-center gap-1.5 text-sm font-semibold">
+              <Icon icon={Flame} className="text-gold" />
+              Sequência
+            </p>
+            <p className={`${figure} mt-3 text-gold-ink`}>
+              <CountUp value={streak} />
+            </p>
+            <p className="mt-auto pt-2 text-sm font-medium">
+              {streak === 1 ? "dia" : "dias"}
+            </p>
+          </StampFrame>
+        </Link>
+      )}
+      <div className={card}>
+        <p className={label}>Palavras</p>
+        <p className={`${figure} mt-3`}>
+          <CountUp value={data.words_unlocked} />
+        </p>
+        <p className="mt-auto pt-2 text-sm text-ink-3">
+          de {data.words_total} liberadas
+        </p>
+        <div
+          aria-hidden="true"
+          className="mt-2 h-1.5 overflow-hidden rounded-full bg-sheet-2"
+        >
+          <div
+            className="h-full origin-left rounded-full bg-accent"
+            style={{ transform: `scaleX(${share})` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const steps = [
+  "Aprenda as primeiras letras, as que você já conhece",
+  "Escolha o som certo e veja a letra ganhar cor no mapa",
+  "Volte amanhã: o caderno lembra do que você precisa rever",
+];
+
+function FirstSteps() {
+  return (
+    <section
+      aria-labelledby="first-steps"
+      className="rise rounded-card bg-sheet p-5 shadow-card"
+      style={stagger(2)}
+    >
+      <h2 id="first-steps" className="text-h3">
+        Como funciona
+      </h2>
+      <ol className="mt-3 grid gap-3">
+        {steps.map((step, i) => (
+          <li key={step} className="flex items-start gap-3 text-ink-2">
+            <span
+              aria-hidden="true"
+              className="grid size-7 shrink-0 place-items-center rounded-full bg-accent-soft font-serif text-sm font-semibold text-accent"
+            >
+              {i + 1}
+            </span>
+            <span className="pt-0.5">{step}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 export function Home() {
   const result = useQuery({
@@ -43,132 +202,44 @@ export function Home() {
     !streak;
   return (
     <>
-      <section
-        className="rise margin-rule rounded-hero bg-sheet py-7 pr-6 pl-9 shadow-card md:py-10 md:pl-16"
-        style={stagger(0)}
-      >
-        <p
-          lang="ru"
-          className="font-serif text-letter leading-none font-semibold md:text-letter-hero"
-        >
-          Привет
-        </p>
-        <p className="mt-3 inline-block rounded-full bg-sheet-2 px-2.5 py-0.5 text-sm font-medium text-ink-2">
-          pri-VIÉT
-        </p>
-        <h1 className="mt-5 text-h1">Vamos praticar?</h1>
-        <p className="mt-2 max-w-prose text-ink-2">
-          {firstTime
-            ? "Sua primeira sessão leva uns 5 minutos. Começamos pelas letras que você já conhece."
-            : "Uma sessão curta por dia vale mais que uma longa por semana."}
-        </p>
-        <Link
-          to="/play"
-          className={`${buttonClasses("primary", "lg")} mt-6 w-full md:w-auto md:min-w-56`}
-        >
-          <Icon icon={Play} size={20} fill="currentColor" />
-          Jogar agora
-        </Link>
-      </section>
-
-      {progress.isPending && (
-        <p className="mt-8 text-ink-2">Carregando progresso…</p>
-      )}
-      {progress.isError && (
-        <div className="mt-8">
-          <ErrorMessage
-            error={progress.error}
-            onRetry={() => progress.refetch()}
+      <div className="grid gap-6 @[50rem]:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] @[50rem]:gap-8">
+        <Hero firstTime={firstTime} />
+        <div className="rise" style={stagger(1)}>
+          <AlphabetMap
+            className="h-full"
+            action={
+              <Link
+                to="/alphabet"
+                className="group flex items-center gap-1 rounded-control py-1 text-sm font-semibold text-accent"
+              >
+                Ver o alfabeto completo
+                <Icon
+                  icon={ArrowRight}
+                  size="1em"
+                  className="transition-transform duration-150 ease-out-soft group-hover:translate-x-0.5"
+                />
+              </Link>
+            }
           />
         </div>
-      )}
-      {data && (
-        <>
-          {!firstTime && (
-            <div
-              className={`rise mt-8 grid gap-3 ${streak === undefined ? "grid-cols-2" : "grid-cols-3"}`}
-              style={stagger(1)}
-            >
-              <Stat
-                label="Para revisar"
-                value={data.due_count}
-                hint={data.due_count === 1 ? "item agora" : "itens agora"}
-              />
-              {streak !== undefined && (
-                <Link
-                  to="/progress"
-                  aria-label={`Sequência: ${streak} ${streak === 1 ? "dia" : "dias"}`}
-                  className="block rounded-card"
-                >
-                  <Stat
-                    tone="gold"
-                    icon={Flame}
-                    label="Sequência"
-                    value={streak}
-                    hint={streak === 1 ? "dia" : "dias"}
-                    className="h-full"
-                  />
-                </Link>
-              )}
-              <Stat
-                label="Palavras"
-                value={data.words_unlocked}
-                hint={`de ${data.words_total} liberadas`}
-              />
-            </div>
+        <div className="@[50rem]:col-span-2">
+          {progress.isPending && (
+            <p className="text-ink-2">Carregando progresso…</p>
           )}
-
-          <section className="rise mt-10" style={stagger(2)}>
-            <h2 className="mb-4">Seu progresso</h2>
-            <div className="grid grid-cols-3 gap-3">
-              {data.groups.map((g) => (
-                <Card
-                  key={g.group}
-                  className="flex flex-col items-center gap-2 px-2 py-4 text-center"
-                >
-                  <ProgressRing
-                    value={g.learned}
-                    total={g.total}
-                    label={`Grupo ${g.group}: ${g.learned} de ${g.total} letras`}
-                    size={68}
-                    strokeWidth={7}
-                  >
-                    <span className="font-serif text-xl font-semibold">
-                      {g.learned}
-                      <span className="text-sm font-normal text-ink-3">
-                        /{g.total}
-                      </span>
-                    </span>
-                  </ProgressRing>
-                  <p className="font-semibold">Grupo {g.group}</p>
-                  <p className="text-xs text-ink-3">{GROUP_HINTS[g.group]}</p>
-                </Card>
-              ))}
-            </div>
-          </section>
-
-          <Link
-            to="/alphabet"
-            className="rise group mt-4 flex items-center gap-4 rounded-card bg-sheet p-4 shadow-card transition-transform duration-150 ease-out-soft active:scale-[.98]"
-            style={stagger(3)}
-          >
-            <span
-              aria-hidden="true"
-              lang="ru"
-              className="grid size-14 shrink-0 place-items-center rounded-control bg-sheet-2 font-serif text-2xl font-semibold"
-            >
-              Ая
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-semibold">Alfabeto</span>
-              <span className="block text-sm text-ink-2">
-                Consulte as letras russas e como se pronunciam.
-              </span>
-            </span>
-            <Icon icon={ChevronRight} className="text-ink-3" />
-          </Link>
-        </>
-      )}
+          {progress.isError && (
+            <ErrorMessage
+              error={progress.error}
+              onRetry={() => progress.refetch()}
+            />
+          )}
+          {data &&
+            (firstTime ? (
+              <FirstSteps />
+            ) : (
+              <StatCards data={data} streak={streak} />
+            ))}
+        </div>
+      </div>
 
       <p
         role="status"

@@ -208,7 +208,6 @@ export function DomeSkyline({
       />
 
       <path d={wall()} fill="var(--sheet)" />
-      <path d="M0 189 H720" opacity={0.35} />
     </svg>
   );
 }

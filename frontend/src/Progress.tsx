@@ -1,20 +1,55 @@
 import { useQuery } from "@tanstack/react-query";
-import { CircleCheck, Flame, Trophy } from "lucide-react";
+import { CircleCheck, Flame, Play } from "lucide-react";
+import { Link } from "react-router";
 import { getStats, type Stats } from "./api/client";
+import { AlphabetMap } from "./components/AlphabetMap";
+import { DomeSkyline } from "./components/art/DomeSkyline";
+import { Laurel } from "./components/art/Laurel";
+import { StampFrame } from "./components/art/StampFrame";
 import { Badge } from "./components/Badge";
-import { Card } from "./components/Card";
+import { buttonClasses } from "./components/Button";
+import { cx } from "./components/cx";
+import { CountUp } from "./components/CountUp";
 import { ErrorMessage } from "./components/ErrorMessage";
 import { Icon } from "./components/Icon";
+import { StatusPip, type Mastery } from "./components/letterStatus";
 import { stagger } from "./components/motion";
 import { Notice } from "./components/Notice";
 import { PageHeader } from "./components/PageHeader";
 
-const MASTERY = [
-  { key: "new", label: "Novos", swatch: "bg-rule/40" },
-  { key: "learning", label: "Aprendendo", swatch: "bg-gold/60" },
-  { key: "familiar", label: "Familiares", swatch: "bg-gold" },
-  { key: "mastered", label: "Dominados", swatch: "bg-success" },
-] as const;
+const MASTERY: {
+  key: Mastery;
+  label: string;
+  segment: string;
+  pip: string;
+}[] = [
+  {
+    key: "new",
+    label: "Novos",
+    // Stripes, not a flat grey: "not started" reads without relying on color.
+    segment:
+      "bg-[repeating-linear-gradient(135deg,transparent_0_0.3rem,var(--rule)_0.3rem_0.4rem)] bg-sheet-2",
+    pip: "text-ink-3",
+  },
+  {
+    key: "learning",
+    label: "Aprendendo",
+    segment: "bg-accent/60",
+    pip: "text-accent",
+  },
+  {
+    key: "familiar",
+    label: "Familiares",
+    segment: "bg-gold",
+    pip: "text-gold-ink",
+  },
+  {
+    key: "mastered",
+    label: "Dominados",
+    segment: "bg-success",
+    pip: "text-success",
+  },
+];
 
 const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
@@ -22,9 +57,7 @@ const plural = (n: number, one: string, many: string) =>
 /** "2026-03-07" -> "07/03" */
 const shortDate = (iso: string) => iso.slice(8) + "/" + iso.slice(5, 7);
 
-/** The gold "postage stamp" used for streaks. */
-const stamp =
-  "rounded-card bg-gold-soft p-4 text-gold-ink outline-2 -outline-offset-6 outline-gold/50 outline-dashed";
+const panel = "rounded-sheet bg-sheet p-5 shadow-card @[32rem]:p-6";
 
 function Mastery({ mastery }: { mastery: Stats["mastery"] }) {
   const total = MASTERY.reduce((sum, m) => sum + mastery[m.key], 0);
@@ -35,29 +68,29 @@ function Mastery({ mastery }: { mastery: Stats["mastery"] }) {
         aria-label={MASTERY.map((m) => `${m.label}: ${mastery[m.key]}`).join(
           ", ",
         )}
-        className="flex h-5 w-full overflow-hidden rounded-full bg-sheet-2 shadow-[inset_0_0_0_1px_var(--hairline)]"
+        className="flex h-6 w-full gap-0.5 overflow-hidden rounded-full bg-sheet shadow-[0_0_0_1px_var(--hairline)]"
       >
         {MASTERY.map((m) => (
           <div
             key={m.key}
-            className={`${m.swatch} h-full border-r-2 border-sheet last:border-r-0`}
+            className={cx(
+              m.segment,
+              "h-full first:rounded-l-full last:rounded-r-full",
+            )}
             style={{
               width: `${total > 0 ? (mastery[m.key] / total) * 100 : 0}%`,
             }}
           />
         ))}
       </div>
-      <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-4">
+      <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 @[24rem]:grid-cols-4">
         {MASTERY.map((m) => (
           <div key={m.key}>
-            <dt className="flex items-center gap-2 text-sm text-ink-2">
-              <span
-                aria-hidden="true"
-                className={`${m.swatch} size-3 rounded-full shadow-[inset_0_0_0_1px_var(--hairline)]`}
-              />
+            <dt className="flex items-center gap-1.5 text-sm text-ink-2">
+              <StatusPip status={m.key} className={cx("text-base", m.pip)} />
               {m.label}
             </dt>
-            <dd className="mt-0.5 font-serif text-3xl font-semibold">
+            <dd className="mt-0.5 font-serif text-3xl font-semibold tracking-tight">
               {mastery[m.key]}
             </dd>
           </div>
@@ -78,28 +111,49 @@ function ActivityChart({ days }: { days: Stats["days"] }) {
   const summary = `Respostas por dia nos últimos ${days.length} dias: ${total} no total, ${right} corretas.`;
   const first = days[0];
   const last = days[days.length - 1];
+  const width = days.length * STEP;
   return (
     <>
-      <p className="text-sm text-ink-2">
-        {total === 0
-          ? "Nenhuma resposta neste período ainda."
-          : `${plural(total, "resposta", "respostas")}, ${Math.round((right / total) * 100)}% corretas`}
+      <p className="flex items-baseline gap-3 text-sm text-ink-2">
+        {total === 0 ? (
+          "Nenhuma resposta neste período ainda."
+        ) : (
+          <>
+            <span className="font-serif text-4xl leading-none font-semibold tracking-tight text-ink">
+              {Math.round((right / total) * 100)}%
+            </span>
+            <span>corretas em {plural(total, "resposta", "respostas")}</span>
+          </>
+        )}
       </p>
       <svg
-        viewBox={`0 0 ${days.length * STEP} ${HEIGHT}`}
+        viewBox={`0 0 ${width} ${HEIGHT}`}
         role="img"
         aria-label={summary}
-        className="mt-3 h-40 w-full"
+        className="mt-4 h-44 w-full @[40rem]:h-56"
         preserveAspectRatio="none"
       >
+        {[0.25, 0.5, 0.75].map((f) => (
+          <line
+            key={f}
+            x1={0}
+            x2={width}
+            y1={HEIGHT * f}
+            y2={HEIGHT * f}
+            stroke="var(--hairline)"
+            strokeWidth={1}
+            strokeDasharray="3 4"
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
         <line
           x1={0}
-          x2={days.length * STEP}
-          y1={HEIGHT / 2}
-          y2={HEIGHT / 2}
-          stroke="var(--hairline)"
+          x2={width}
+          y1={HEIGHT - 0.5}
+          y2={HEIGHT - 0.5}
+          stroke="var(--rule)"
           strokeWidth={1}
-          strokeDasharray="3 4"
+          opacity={0.6}
           vectorEffect="non-scaling-stroke"
         />
         {days.map((d, i) => {
@@ -111,14 +165,14 @@ function ActivityChart({ days }: { days: Stats["days"] }) {
               {d.answered === 0 && (
                 // A tally mark so empty days still read as days.
                 <line
-                  x1={x}
-                  x2={x + BAR}
-                  y1={HEIGHT - 1}
-                  y2={HEIGHT - 1}
+                  x1={x + 1}
+                  x2={x + BAR - 1}
+                  y1={HEIGHT - 3}
+                  y2={HEIGHT - 3}
                   stroke="var(--rule)"
                   strokeWidth={3}
                   strokeLinecap="round"
-                  opacity={0.45}
+                  opacity={0.4}
                   vectorEffect="non-scaling-stroke"
                 />
               )}
@@ -129,8 +183,9 @@ function ActivityChart({ days }: { days: Stats["days"] }) {
                   y={HEIGHT - all}
                   width={BAR}
                   height={all}
+                  rx={1}
                   fill="var(--accent)"
-                  opacity={0.4}
+                  opacity={0.35}
                 />
               )}
               {d.correct > 0 && (
@@ -139,6 +194,7 @@ function ActivityChart({ days }: { days: Stats["days"] }) {
                   y={HEIGHT - ok}
                   width={BAR}
                   height={ok}
+                  rx={1}
                   fill="var(--success)"
                 />
               )}
@@ -159,7 +215,7 @@ function ActivityChart({ days }: { days: Stats["days"] }) {
         <li className="flex items-center gap-2">
           <span
             aria-hidden="true"
-            className="size-3 rounded-sm bg-accent opacity-40"
+            className="size-3 rounded-sm bg-accent opacity-35"
           />
           Respostas
         </li>
@@ -204,6 +260,86 @@ function ActivityChart({ days }: { days: Stats["days"] }) {
   );
 }
 
+/** The streak as a gold stamp and the best streak under a laurel. */
+function Streaks({ data }: { data: Stats }) {
+  return (
+    <div className="grid content-start gap-4">
+      <div className="grid grid-cols-2 gap-4 @[50rem]:grid-cols-1 @[50rem]:gap-5">
+        <div className="stamp-in">
+          <StampFrame
+            tilt
+            className="flex h-full flex-col gap-2 p-5 @[32rem]:p-6"
+          >
+            <Icon icon={Flame} size="2rem" className="text-gold" />
+            <h2 className="sr-only">
+              Sequência: {plural(data.streak, "dia", "dias")}
+            </h2>
+            <p
+              aria-hidden="true"
+              className="font-serif text-[clamp(3.5rem,18cqw,5rem)] leading-none font-semibold tracking-tight"
+            >
+              <CountUp value={data.streak} />
+            </p>
+            <p aria-hidden="true" className="font-medium">
+              {data.streak === 1 ? "dia de sequência" : "dias de sequência"}
+            </p>
+          </StampFrame>
+        </div>
+        <div
+          className="stamp-in grid place-items-center gap-1 text-center"
+          style={stagger(1)}
+        >
+          <Laurel className="w-[min(100%,11rem)]">
+            <span
+              aria-hidden="true"
+              className="font-serif text-5xl leading-none font-semibold tracking-tight text-gold-ink"
+            >
+              {data.best_streak}
+            </span>
+          </Laurel>
+          <p className="font-serif text-h3 leading-tight font-semibold">
+            Melhor sequência: {plural(data.best_streak, "dia", "dias")}
+          </p>
+        </div>
+      </div>
+      {data.today_done ? (
+        <Badge tone="success" icon={CircleCheck} className="w-fit">
+          Meta de hoje cumprida
+        </Badge>
+      ) : (
+        <Notice tone="warning">
+          Faça uma sessão com pelo menos 5 respostas hoje
+        </Notice>
+      )}
+    </div>
+  );
+}
+
+/** Shown before the first answer: the notebook is still blank. */
+function BlankNotebook() {
+  return (
+    <div className={cx(panel, "overflow-hidden p-0 @[32rem]:p-0")}>
+      <div
+        aria-hidden="true"
+        className="bg-linear-to-b from-sheet-2 to-sheet px-[4%] pt-6"
+      >
+        <DomeSkyline className="block w-full" />
+      </div>
+      <div className="grid justify-items-start gap-3 p-6">
+        <h2 className="text-h2">Seu caderno ainda está em branco</h2>
+        <p className="max-w-[34ch] text-ink-2">
+          Faça a primeira sessão e as letras começam a ganhar cor no mapa. Aqui
+          vão aparecer sua sequência, seu domínio e seus dias de prática.
+        </p>
+        <Link to="/play" className={cx(buttonClasses("primary", "lg"), "mt-2")}>
+          <Icon icon={Play} fill="currentColor" />
+          Jogar agora
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export function Progress() {
   const stats = useQuery({
     queryKey: ["stats"],
@@ -211,6 +347,11 @@ export function Progress() {
     retry: false,
   });
   const data = stats.data;
+  const blank =
+    !!data &&
+    data.streak === 0 &&
+    data.best_streak === 0 &&
+    data.days.every((d) => d.answered === 0);
   return (
     <>
       <PageHeader
@@ -227,40 +368,43 @@ export function Progress() {
         </div>
       )}
       {data && (
-        <div className="mt-8 grid gap-6">
-          <div className="rise grid gap-3" style={stagger(0)}>
-            <div className="grid grid-cols-2 gap-3">
-              <div className={stamp}>
-                <Icon icon={Flame} size={32} className="text-gold" />
-                <h2 className="mt-3 text-h3">
-                  Sequência: {plural(data.streak, "dia", "dias")}
-                </h2>
-              </div>
-              <div className={stamp}>
-                <Icon icon={Trophy} size={32} className="text-gold" />
-                <p className="mt-3 font-serif text-h3 leading-tight font-semibold">
-                  Melhor sequência: {plural(data.best_streak, "dia", "dias")}
-                </p>
-              </div>
-            </div>
-            {data.today_done ? (
-              <Badge tone="success" icon={CircleCheck} className="w-fit">
-                Meta de hoje cumprida
-              </Badge>
-            ) : (
-              <Notice tone="warning">
-                Faça uma sessão com pelo menos 5 respostas hoje
-              </Notice>
-            )}
+        <div className="@container mt-8 grid gap-6 @[50rem]:grid-cols-12 @[50rem]:gap-8">
+          <div
+            className="rise @[50rem]:col-span-5 @[50rem]:col-start-8 @[50rem]:row-start-1"
+            style={stagger(0)}
+          >
+            {blank ? <BlankNotebook /> : <Streaks data={data} />}
           </div>
-          <Card className="rise" style={stagger(1)}>
-            <h2 className="mb-4 text-h3">Domínio</h2>
-            <Mastery mastery={data.mastery} />
-          </Card>
-          <Card className="rise" style={stagger(2)}>
-            <h2 className="mb-1 text-h3">Últimos 30 dias</h2>
-            <ActivityChart days={data.days} />
-          </Card>
+          <div
+            className="rise @[50rem]:col-span-7 @[50rem]:col-start-1 @[50rem]:row-start-1"
+            style={stagger(1)}
+          >
+            <AlphabetMap className="h-full" />
+          </div>
+          {!blank && (
+            <>
+              <section
+                aria-labelledby="mastery-title"
+                className={cx(panel, "rise @[50rem]:col-span-5")}
+                style={stagger(2)}
+              >
+                <h2 id="mastery-title" className="mb-4 text-h3">
+                  Domínio
+                </h2>
+                <Mastery mastery={data.mastery} />
+              </section>
+              <section
+                aria-labelledby="activity-title"
+                className={cx(panel, "rise @[50rem]:col-span-7")}
+                style={stagger(3)}
+              >
+                <h2 id="activity-title" className="mb-3 text-h3">
+                  Últimos 30 dias
+                </h2>
+                <ActivityChart days={data.days} />
+              </section>
+            </>
+          )}
         </div>
       )}
     </>

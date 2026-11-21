@@ -1,7 +1,7 @@
 import { cleanup, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { Alphabet } from "./Alphabet";
-import { mockFetch, renderWithProviders } from "./test-utils";
+import { letterMap, mockFetch, renderWithProviders } from "./test-utils";
 
 afterEach(() => {
   cleanup();
@@ -36,11 +36,30 @@ it("renders 33 letters grouped under the three titles", async () => {
     "Grupo 2: parecem latinas, mas soam diferente",
     "Grupo 3: letras novas",
   ]);
-  const group3 = screen.getByRole("heading", {
-    name: /Grupo 3/,
-  }).parentElement!;
+  const group3 = screen
+    .getByRole("heading", { name: /Grupo 3/ })
+    .closest("section")!;
   expect(within(group3).getAllByRole("listitem")).toHaveLength(20);
   expect(within(group3).getByText("Ч")).toBeTruthy();
   expect(within(group3).getByText("ч")).toBeTruthy();
   expect(within(group3).getByText("som 24")).toBeTruthy();
+});
+
+it("shows each letter's mastery as a word and a ring per group", async () => {
+  mockFetch({
+    "/api/items?kind=letter": letters,
+    "/api/progress/letters": letterMap,
+  });
+  // jsdom has no scrolling; the page scrolls to the card the hash points at.
+  const scroll = vi.fn();
+  Element.prototype.scrollIntoView = scroll;
+  renderWithProviders(<Alphabet />, "/alphabet#letra-1");
+  await screen.findAllByRole("listitem");
+  const card = document.getElementById("letra-1")!;
+  expect(scroll).toHaveBeenCalled();
+  expect(within(card).getByText("dominada")).toBeTruthy();
+  expect(within(card).getByText("som 1")).toBeTruthy();
+  expect(
+    screen.getByRole("img", { name: "2 de 5 letras dominadas" }),
+  ).toBeTruthy();
 });

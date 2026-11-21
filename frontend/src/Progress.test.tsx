@@ -2,6 +2,7 @@ import { cleanup, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { Progress } from "./Progress";
 import {
+  letterMap,
   mockFetch,
   renderWithProviders,
   stats,
@@ -14,7 +15,7 @@ afterEach(() => {
 });
 
 it("shows the streak, mastery numbers and an accessible activity chart", async () => {
-  mockFetch({ "/api/stats": stats });
+  mockFetch({ "/api/stats": stats, "/api/progress/letters": letterMap });
   renderWithProviders(<Progress />);
 
   expect(
@@ -44,7 +45,10 @@ it("shows the streak, mastery numbers and an accessible activity chart", async (
 });
 
 it("nudges the learner when today has no qualifying session", async () => {
-  mockFetch({ "/api/stats": { ...stats, streak: 0, today_done: false } });
+  mockFetch({
+    "/api/stats": { ...stats, streak: 0, today_done: false },
+    "/api/progress/letters": letterMap,
+  });
   renderWithProviders(<Progress />);
   expect(
     await screen.findByText("Faça uma sessão com pelo menos 5 respostas hoje"),
@@ -55,9 +59,45 @@ it("nudges the learner when today has no qualifying session", async () => {
 });
 
 it("offers a retry when stats fail to load", async () => {
-  mockFetch({ "/api/stats": new WithStatus({}, 500) });
+  mockFetch({
+    "/api/stats": new WithStatus({}, 500),
+    "/api/progress/letters": letterMap,
+  });
   renderWithProviders(<Progress />);
   expect(
     await screen.findByRole("button", { name: "Tentar de novo" }),
   ).toBeTruthy();
+});
+
+it("shows the alphabet map with its text alternative", async () => {
+  mockFetch({ "/api/stats": stats, "/api/progress/letters": letterMap });
+  renderWithProviders(<Progress />);
+  expect(
+    await screen.findByText(
+      "Mapa do alfabeto, 33 letras: 19 novas, 7 aprendendo, 5 familiares, 2 dominadas.",
+    ),
+  ).toBeTruthy();
+});
+
+it("shows a designed blank state before the first answer", async () => {
+  mockFetch({
+    "/api/stats": {
+      ...stats,
+      streak: 0,
+      best_streak: 0,
+      today_done: false,
+      days: stats.days.map((d) => ({ ...d, answered: 0, correct: 0 })),
+    },
+    "/api/progress/letters": letterMap,
+  });
+  renderWithProviders(<Progress />);
+  expect(
+    await screen.findByRole("heading", {
+      name: "Seu caderno ainda está em branco",
+    }),
+  ).toBeTruthy();
+  expect(
+    screen.getByRole("link", { name: "Jogar agora" }).getAttribute("href"),
+  ).toBe("/play");
+  expect(screen.queryByRole("table")).toBeNull();
 });

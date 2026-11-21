@@ -11,22 +11,26 @@ const edges = [
 
 /**
  * A gold foil postage stamp: perforated edge, a printed inner frame and its
- * children. The holes show whatever sits behind (`--stamp-cut`, the sheet
- * colour by default). Set `tilt` for the slightly crooked look of a real stamp.
+ * children. The holes show what sits behind the stamp, so say which surface
+ * that is with `cut` ("sheet" on a card, "paper" on the page). `tilt` gives
+ * the slightly crooked look of a real stamp. Size it with `className`
+ * (padding, flex, width); everything scales with the font size.
  */
 export function StampFrame({
   children,
   tilt = false,
+  cut = "sheet",
   className,
 }: {
   children: ReactNode;
   tilt?: boolean;
+  cut?: "sheet" | "paper";
   className?: string;
 }) {
   return (
     <div
       className={cx(
-        "stamp-frame relative bg-(image:--foil) text-gold-ink",
+        "relative bg-(image:--foil) text-gold-ink",
         tilt && "-rotate-2",
         className,
       )}
@@ -35,7 +39,7 @@ export function StampFrame({
         aria-hidden="true"
         focusable="false"
         className="pointer-events-none absolute inset-0 size-full overflow-visible"
-        stroke="var(--stamp-cut, var(--sheet))"
+        stroke={cut === "paper" ? "var(--paper)" : "var(--sheet)"}
         strokeWidth="0.4em"
         strokeLinecap="round"
         strokeDasharray="0 0.8em"
@@ -44,8 +48,8 @@ export function StampFrame({
           <line key={`${edge.x1}${edge.x2}${edge.y1}`} {...edge} />
         ))}
       </svg>
-      <div className="pointer-events-none absolute inset-[0.55em] rounded-[0.2em] border border-gold/60" />
-      <div className="relative">{children}</div>
+      <div className="pointer-events-none absolute inset-[0.5em] rounded-[0.2em] border border-gold/60" />
+      {children}
     </div>
   );
 }

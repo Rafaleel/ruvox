@@ -83,7 +83,7 @@ function Legend({ counts }: { counts: Record<Mastery, number> }) {
   return (
     <ul
       aria-hidden="true"
-      className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-2"
+      className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-ink-2 @[34rem]:grid-cols-4"
     >
       {MASTERY_ORDER.map((s) => (
         <li key={s} className="flex items-center gap-2">
@@ -131,13 +131,13 @@ export function AlphabetMap({
     <section
       aria-labelledby="alphabet-map-title"
       className={cx(
-        "@container relative overflow-hidden rounded-sheet bg-sheet p-5 shadow-card @[32rem]:p-6",
+        "@container relative flex flex-col overflow-hidden rounded-sheet bg-sheet p-5 shadow-card @[32rem]:p-6",
         className,
       )}
     >
       <GhostLetter
         letter="Ж"
-        className="-top-[12%] -right-[6%] w-[46%] max-w-[16rem]"
+        className="-right-[8%] -bottom-[10%] w-[42%] max-w-[16rem]"
       />
       <header className="relative flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <div>
@@ -213,7 +213,7 @@ export function AlphabetMap({
           {/* One line that follows hover and focus; it reserves its height so nothing jumps. */}
           <p
             aria-hidden="true"
-            className="relative mt-4 flex min-h-[2.25rem] items-center gap-3 text-sm text-ink-2"
+            className="relative mt-auto flex min-h-[2.25rem] items-center gap-3 pt-4 text-sm text-ink-2"
           >
             {active ? (
               <>
@@ -233,8 +233,7 @@ export function AlphabetMap({
               </>
             ) : (
               <span>
-                {summary.counts.mastered} de {letters.length} letras dominadas.
-                Toque numa letra para ver como se lê.
+                {summary.counts.mastered} de {letters.length} letras dominadas
               </span>
             )}
           </p>
