@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { cx } from "../cx";
 
 /** Onion dome outline: a bulb wider than its base that ends in a point. */
 const onion = (cx: number, y: number, w: number, h: number) => {
@@ -84,9 +85,9 @@ const GROUND = 200;
 
 /** Swallowtail merlons of a Kremlin wall: the foreground band. */
 const wall = () => {
-  let d = `M-10 ${GROUND} V178`;
-  for (let x = -10; x < 740; x += 24) d += ` H${x} v-10 l6 6 l6 -6 v10`;
-  return `${d} H740 V${GROUND} Z`;
+  let d = `M-1990 ${GROUND} V178`;
+  for (let x = -1990; x < 2710; x += 24) d += ` H${x} v-10 l6 6 l6 -6 v10`;
+  return `${d} H2710 V${GROUND} Z`;
 };
 
 const stars = [
@@ -115,7 +116,7 @@ export function DomeSkyline({
       viewBox="0 0 720 204"
       aria-hidden="true"
       focusable="false"
-      className={className}
+      className={cx("overflow-visible", className)}
       style={style}
       fill="none"
       stroke="var(--ink-2)"

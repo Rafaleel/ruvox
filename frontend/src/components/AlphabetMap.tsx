@@ -155,7 +155,7 @@ export function AlphabetMap({
         <div
           role="status"
           aria-label="Carregando o mapa do alfabeto"
-          className="relative mt-5 grid animate-pulse grid-cols-10 gap-1.5"
+          className="relative mt-5 grid animate-pulse grid-cols-8 gap-1.5 @[28rem]:grid-cols-10"
         >
           {Array.from({ length: 33 }, (_, i) => (
             <span
@@ -197,7 +197,7 @@ export function AlphabetMap({
                   </p>
                   <ul
                     aria-label={info.title}
-                    className="grid grid-cols-10 gap-1.5 @[40rem]:gap-2"
+                    className="grid grid-cols-8 gap-1.5 @[28rem]:grid-cols-10 @[40rem]:gap-2"
                   >
                     {members.map((letter) => (
                       <li key={letter.id} className="aspect-square">
@@ -210,38 +210,38 @@ export function AlphabetMap({
             })}
           </div>
 
-          {/* One line that follows hover and focus; it reserves its height so nothing jumps. */}
-          <p
-            aria-hidden="true"
-            className="relative mt-auto flex min-h-[2.25rem] items-center gap-3 pt-4 text-sm text-ink-2"
-          >
-            {active ? (
-              <>
-                <span
-                  lang="ru"
-                  className="font-serif text-2xl font-semibold text-ink"
-                >
-                  {active.text} {active.text.toLowerCase()}
-                </span>
-                <span>{active.pronunciation}</span>
-                <span className="ml-auto flex items-center gap-1.5 font-medium text-ink">
-                  <StatusPip status={active.status} />
-                  <span className="capitalize">
-                    {MASTERY_META[active.status].label}
+          {/* The legend; while a tile is hovered or focused it gives way to that
+              letter's details (same height, so nothing jumps). */}
+          <div className="relative mt-auto pt-5">
+            <div
+              aria-hidden="true"
+              className="flex min-h-[4.25rem] flex-col justify-center border-t border-hairline pt-3"
+            >
+              {active ? (
+                <p className="flex items-center gap-3 text-sm text-ink-2">
+                  <span
+                    lang="ru"
+                    className="font-serif text-2xl font-semibold text-ink"
+                  >
+                    {active.text} {active.text.toLowerCase()}
                   </span>
-                </span>
-              </>
-            ) : (
-              <span>
-                {summary.counts.mastered} de {letters.length} letras dominadas
-              </span>
-            )}
-          </p>
-          {legend && (
-            <div className="relative mt-3 border-t border-hairline pt-3">
-              <Legend counts={summary.counts} />
+                  <span>{active.pronunciation}</span>
+                  <span className="ml-auto flex items-center gap-1.5 font-medium text-ink">
+                    <StatusPip status={active.status} />
+                    <span className="capitalize">
+                      {MASTERY_META[active.status].label}
+                    </span>
+                  </span>
+                </p>
+              ) : legend ? (
+                <Legend counts={summary.counts} />
+              ) : (
+                <p className="text-sm text-ink-2">
+                  {summary.counts.mastered} de {letters.length} letras dominadas
+                </p>
+              )}
             </div>
-          )}
+          </div>
         </>
       )}
     </section>

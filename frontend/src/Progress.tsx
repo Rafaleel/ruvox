@@ -327,7 +327,7 @@ function BlankNotebook() {
     <div className="overflow-hidden rounded-sheet bg-sheet shadow-card">
       <div
         aria-hidden="true"
-        className="bg-linear-to-b from-sheet-2 to-sheet px-[4%] pt-6"
+        className="bg-linear-to-b from-sheet-2 to-sheet pt-6"
       >
         <DomeSkyline className="block w-full" />
       </div>

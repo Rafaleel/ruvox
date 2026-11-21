@@ -22,9 +22,9 @@ function Hero({ firstTime }: { firstTime: boolean }) {
     >
       <div
         aria-hidden="true"
-        className="bg-linear-to-b from-sheet-2 to-sheet px-[4%] pt-6"
+        className="bg-linear-to-b from-sheet-2 to-sheet pt-6"
       >
-        <DomeSkyline className="mx-auto block max-h-[9.5rem] w-full" />
+        <DomeSkyline className="mx-auto block max-h-[8rem] w-full" />
       </div>
       <div className="margin-rule relative flex flex-1 flex-col pt-2 pr-7 pb-8 pl-12 @[30rem]:pl-14">
         <div aria-hidden="true" className="ruled absolute inset-0" />
@@ -34,7 +34,7 @@ function Hero({ firstTime }: { firstTime: boolean }) {
         />
         <p
           lang="ru"
-          className="relative font-serif text-[clamp(4rem,21cqw,6rem)] leading-[1.05] font-semibold tracking-tight"
+          className="relative font-serif text-[clamp(4rem,21cqw,5.5rem)] leading-[1.05] font-semibold tracking-tight"
         >
           Привет
         </p>
