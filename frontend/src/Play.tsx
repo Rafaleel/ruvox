@@ -29,6 +29,7 @@ import { Icon } from "./components/Icon";
 import { stagger } from "./components/motion";
 import { PageHeader } from "./components/PageHeader";
 import { Segmented } from "./components/Segmented";
+import { Lessons } from "./components/Lessons";
 import { Quiz } from "./Quiz";
 
 const SIZES = [5, 10, 15];
@@ -155,6 +156,7 @@ function ModeCard({
 
 export function Play() {
   const [session, setSession] = useState<Session | null>(null);
+  const [introDone, setIntroDone] = useState<number | null>(null);
   const [size, setSize] = useState(10);
   const [mode, setMode] = useState<SessionCreate["mode"]>("mixed");
   const [params, setParams] = useSearchParams();
@@ -177,6 +179,13 @@ export function Play() {
     onSuccess: setSession,
   });
 
+  if (session?.lessons?.length && introDone !== session.session_id)
+    return (
+      <Lessons
+        lessons={session.lessons}
+        onDone={() => setIntroDone(session.session_id)}
+      />
+    );
   if (session)
     return (
       <Quiz

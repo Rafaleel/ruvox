@@ -23,6 +23,7 @@ from app.models.schemas import (
     AnswerOut,
     FinishOut,
     ItemOut,
+    LessonOut,
     Pair,
     QuestionOut,
     SessionCreate,
@@ -30,7 +31,7 @@ from app.models.schemas import (
 )
 from app.services.answer_checker import answers_match
 from app.services.profile import update_profile
-from app.services.questions import QuestionDraft
+from app.services.questions import QuestionDraft, SeedQuestionGenerator
 from app.services.selection import as_utc
 from app.services.srs import (
     apply_to_review_state,
@@ -112,7 +113,40 @@ def create_session(body: SessionCreate, db: Db, llm: Llm) -> SessionOut:
         session_id=study.id,
         source=prepared.source,
         questions=[question_out(db, q) for q in questions],
+        lessons=lessons_for(db, drafts),
     )
+
+
+MAX_LESSONS = 6
+
+
+def lessons_for(db: Session, drafts: list[QuestionDraft]) -> list[LessonOut]:
+    """Intro cards for the session's items that have no review state yet."""
+    ids = list(dict.fromkeys(i for d in drafts for i in d.item_ids))
+    seen = set(
+        db.exec(
+            select(ReviewState.item_id).where(
+                ReviewState.user_id == USER_ID, col(ReviewState.item_id).in_(ids)
+            )
+        )
+    )
+    generator = SeedQuestionGenerator(db)
+    lessons = []
+    for item_id in ids:
+        item = db.get(Item, item_id)
+        if item is None or item_id in seen or item.user_id != USER_ID:
+            continue
+        lessons.append(
+            LessonOut(
+                item_id=item_id,
+                kind=item.kind,
+                text=item.text,
+                pronunciation=item.pronunciation,
+                meaning=item.meaning,
+                note=generator.lesson_note(item),
+            )
+        )
+    return lessons[:MAX_LESSONS]
 
 
 def evaluate(

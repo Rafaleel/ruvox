@@ -330,3 +330,30 @@ it("opens the alphabet for consultation during a session", async () => {
     screen.queryByRole("dialog", { name: "Consulta do alfabeto" }),
   ).toBeNull();
 });
+
+it("shows intro lessons for new items before the first question", async () => {
+  routes["POST /api/sessions"] = () =>
+    Response.json({
+      session_id: 7,
+      source: "offline",
+      questions: [question(1, "Como se lê Ч?")],
+      lessons: [
+        {
+          item_id: 1,
+          kind: "letter",
+          text: "Ч",
+          pronunciation: "tch",
+          meaning: "",
+          note: "Letra nova: grave a forma junto com o som.",
+        },
+      ],
+    });
+
+  renderPlay();
+  fireEvent.click(screen.getByRole("button", { name: "Começar" }));
+  expect(await screen.findByText("Novidade 1 de 1")).toBeTruthy();
+  expect(screen.getByText(/Letra nova/)).toBeTruthy();
+  expect(screen.queryByText("Como se lê Ч?")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Começar o jogo" }));
+  expect(await screen.findByText("Como se lê Ч?")).toBeTruthy();
+});

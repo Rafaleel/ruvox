@@ -135,6 +135,12 @@ class SeedQuestionGenerator:
             item_ids=[item.id],
         )
 
+    def lesson_note(self, item: Item) -> str:
+        """The teaching text of an intro card: group tip for letters, spelling for words."""
+        if item.kind == "letter":
+            return LETTER_TIPS.get(item.group or 0, "")
+        return self._spelling(item)
+
     def _letter_note(self, item: Item) -> str:
         note = f"{item.text} lê-se {item.pronunciation}."
         tip = LETTER_TIPS.get(item.group or 0)

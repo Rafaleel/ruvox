@@ -31,10 +31,22 @@ class SessionCreate(BaseModel):
     size: int = Field(default=10, ge=5, le=20)
 
 
+class LessonOut(BaseModel):
+    """Intro card for an item the learner has never practiced."""
+
+    item_id: int
+    kind: str
+    text: str
+    pronunciation: str
+    meaning: str
+    note: str
+
+
 class SessionOut(BaseModel):
     session_id: int
     source: Literal["offline", "ai"]
     questions: list[QuestionOut]
+    lessons: list[LessonOut] = []
 
 
 class AnswerIn(BaseModel):

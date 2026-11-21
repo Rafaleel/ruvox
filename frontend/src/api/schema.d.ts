@@ -614,6 +614,24 @@ export interface components {
             /** Paired */
             paired: boolean;
         };
+        /**
+         * LessonOut
+         * @description Intro card for an item the learner has never practiced.
+         */
+        LessonOut: {
+            /** Item Id */
+            item_id: number;
+            /** Kind */
+            kind: string;
+            /** Text */
+            text: string;
+            /** Pronunciation */
+            pronunciation: string;
+            /** Meaning */
+            meaning: string;
+            /** Note */
+            note: string;
+        };
         /** LetterStatus */
         LetterStatus: {
             /** Id */
@@ -769,6 +787,11 @@ export interface components {
             source: "offline" | "ai";
             /** Questions */
             questions: components["schemas"]["QuestionOut"][];
+            /**
+             * Lessons
+             * @default []
+             */
+            lessons: components["schemas"]["LessonOut"][];
         };
         /** SettingsIn */
         SettingsIn: {
