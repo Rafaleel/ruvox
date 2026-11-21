@@ -83,21 +83,6 @@ class ProgressOut(BaseModel):
     words_total: int
 
 
-class SettingsOut(BaseModel):
-    """The API key is write-only: only its presence and source are reported."""
-
-    has_key: bool
-    key_from_env: bool
-    model: str
-
-
-class SettingsIn(BaseModel):
-    api_key: str | None = Field(
-        default=None, max_length=300
-    )  # "" clears the stored key
-    model: str | None = Field(default=None, min_length=1, max_length=100)
-
-
 class LLMTestOut(BaseModel):
     ok: bool
     message: str
@@ -165,3 +150,52 @@ class StatsOut(BaseModel):
     streak: int
     best_streak: int
     today_done: bool
+
+
+class ProviderOut(BaseModel):
+    id: str
+    label: str  # who the key belongs to, e.g. "OpenAI"
+    maker: str  # the assistant's brand, e.g. "ChatGPT"
+    has_key: bool
+    key_from_env: bool
+    model: str
+    key_url: str
+    key_example: str
+
+
+class ProviderIn(BaseModel):
+    api_key: str | None = Field(default=None, max_length=400)  # "" removes the key
+    model: str | None = Field(default=None, max_length=200)
+
+
+class SettingsOut(BaseModel):
+    """Keys are write-only: only their presence is reported."""
+
+    active_provider: str
+    providers: list[ProviderOut]
+    llm_ready: bool  # the active provider has a key and a model
+
+
+class SettingsIn(BaseModel):
+    active_provider: str | None = None
+    providers: dict[str, ProviderIn] = {}
+
+
+class ModelOption(BaseModel):
+    id: str
+    label: str
+
+
+class ModelsIn(BaseModel):
+    api_key: str | None = Field(
+        default=None, max_length=400
+    )  # try a key before saving it
+
+
+class ModelsOut(BaseModel):
+    models: list[ModelOption]
+    source: Literal["live", "builtin"]
+
+
+class LLMTestIn(BaseModel):
+    provider: str | None = None

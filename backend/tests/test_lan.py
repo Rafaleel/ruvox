@@ -153,7 +153,7 @@ def test_toggling_saves_the_choice_and_asks_for_a_restart(client: TestClient) ->
     saved = read_settings()
     assert saved.lan_enabled and saved.lan_secret
     client.put(
-        "/api/settings", json={"api_key": "sk-x"}
+        "/api/settings", json={"providers": {"anthropic": {"api_key": "sk-x"}}}
     )  # must not clobber the LAN fields
     assert (
         read_settings().lan_enabled and read_settings().lan_secret == saved.lan_secret

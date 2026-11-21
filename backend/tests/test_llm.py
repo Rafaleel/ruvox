@@ -9,7 +9,7 @@ from sqlmodel import Session, select
 
 from app.agents import llm
 from app.agents.llm import AgnoLLM, LLMUnavailable, Ping, cost_usd, get_llm, load_prompt
-from app.config import Settings
+from app.config import ProviderConfig, Settings
 from app.models import LLMCall
 
 
@@ -29,7 +29,13 @@ class StubAgent:
 
 @pytest.fixture
 def settings() -> Settings:
-    return Settings(api_key=SecretStr("sk-test"), model="claude-sonnet-5-5")
+    return Settings(
+        providers={
+            "anthropic": ProviderConfig(
+                api_key=SecretStr("sk-test"), model="claude-sonnet-5-5"
+            )
+        }
+    )
 
 
 def calls(db: Session) -> list[LLMCall]:

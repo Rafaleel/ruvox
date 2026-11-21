@@ -39,7 +39,13 @@ T = TypeVar("T", bound=BaseModel)
 def friendly_error(detail: str) -> str:
     """A pt-BR explanation of an API failure; the raw detail stays in the log and table."""
     text = detail.lower()
-    if "401" in text or "authentication" in text or "invalid x-api-key" in text:
+    if (
+        "401" in text
+        or "authentication" in text
+        or "invalid x-api-key" in text
+        or "incorrect api key" in text
+        or "invalid api key" in text
+    ):
         return "A chave da API foi recusada. Confira a chave em Configurações."
     if "403" in text or "permission" in text:
         return "A chave não tem permissão para usar este modelo."
@@ -167,9 +173,20 @@ class AgnoLLM:
             db.commit()
 
 
-def get_llm(engine: Engine) -> StructuredLLM | None:
-    """The real LLM, or None when no API key is configured (offline mode)."""
+def get_llm(engine: Engine, provider_id: str | None = None) -> StructuredLLM | None:
+    """The model of `provider_id` (default: the active provider), or None when it has no
+    key or no model chosen (offline mode)."""
     settings = effective_settings()
-    if not settings.api_key or not settings.api_key.get_secret_value():
+    provider_id = provider_id or settings.active_provider
+    config = settings.provider(provider_id)
+    if not config.api_key or not config.api_key.get_secret_value() or not config.model:
         return None
-    return AgnoLLM(engine, settings)
+    if provider_id == "anthropic":
+        return AgnoLLM(
+            engine, settings.model_copy(update={"active_provider": "anthropic"})
+        )
+    from app.agents.langchain_llm import LangChainLLM
+
+    return LangChainLLM(
+        engine, provider_id, config.api_key.get_secret_value(), config.model
+    )

@@ -17,7 +17,7 @@ from sqlmodel import Session
 
 from app.agents.corrector import Correction
 from app.agents.llm import AgnoLLM, Ping
-from app.config import Settings
+from app.config import ProviderConfig, Settings
 
 
 class FakeApi:
@@ -62,7 +62,12 @@ def api(monkeypatch: pytest.MonkeyPatch) -> Iterator[FakeApi]:
 
 
 def llm(db: Session, model: str = "claude-sonnet-5-5") -> AgnoLLM:
-    return AgnoLLM(db.get_bind(), Settings(api_key=SecretStr("sk-test"), model=model))  # type: ignore[arg-type]
+    settings = Settings(
+        providers={
+            "anthropic": ProviderConfig(api_key=SecretStr("sk-test"), model=model)
+        }
+    )
+    return AgnoLLM(db.get_bind(), settings)  # type: ignore[arg-type]
 
 
 def test_structured_output_uses_the_native_format_without_forbidden_parameters(

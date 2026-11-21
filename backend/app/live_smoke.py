@@ -1,6 +1,7 @@
 """Opt-in smoke test against the real Anthropic API (never run in CI).
 
     cd backend && RUVOX_LIVE_LLM=1 ANTHROPIC_API_KEY=... uv run python -m app.live_smoke
+    # another provider: RUVOX_LLM_PROVIDER=openai OPENAI_API_KEY=... RUVOX_LLM_MODEL=<id from Settings>
 
 Runs the planner, generator and corrector once in a throwaway data directory and
 prints the latency and cost of every call. It spends a few cents.
@@ -19,8 +20,23 @@ def main(argv: Sequence[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        print("Set ANTHROPIC_API_KEY to run the live smoke test.", file=sys.stderr)
+    provider = os.getenv("RUVOX_LLM_PROVIDER", "anthropic")
+    key_env = {
+        "anthropic": "ANTHROPIC_API_KEY",
+        "openai": "OPENAI_API_KEY",
+        "groq": "GROQ_API_KEY",
+    }
+    if provider not in key_env or not os.getenv(key_env[provider]):
+        print(
+            f"Set {key_env.get(provider, 'the provider key')} to run the live smoke test.",
+            file=sys.stderr,
+        )
+        return 2
+    if provider != "anthropic" and not os.getenv("RUVOX_LLM_MODEL"):
+        print(
+            "Set RUVOX_LLM_MODEL to a model id your key can use (see Settings).",
+            file=sys.stderr,
+        )
         return 2
 
     with tempfile.TemporaryDirectory() as scratch:
@@ -46,7 +62,7 @@ def _run() -> int:
         seed(db)
         llm = get_llm(engine)
         if llm is None:
-            print("No API key found.", file=sys.stderr)
+            print("No key or model found for the active provider.", file=sys.stderr)
             return 2
         seed_planner = SeedContentPlanner(db)
         planner = AgentContentPlanner(db, llm, seed_planner)

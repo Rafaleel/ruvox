@@ -22,4 +22,7 @@ uv run --frozen pyinstaller "$mode" --noconfirm --name "$name" \
     --add-data "$PWD/alembic/versions/*.py:alembic/versions" \
     --add-data "$PWD/app/web:app/web" --add-data "$PWD/app/data:app/data" \
     --copy-metadata agno --copy-metadata anthropic \
+    --copy-metadata langchain-core --copy-metadata langchain-openai --copy-metadata langchain-groq \
+    --copy-metadata openai --copy-metadata groq \
+    --hidden-import langchain_openai --hidden-import langchain_groq \
     "$PWD/app/sidecar.py"
