@@ -43,7 +43,6 @@ export function Home() {
     !streak;
   return (
     <>
-      <p className="mb-4 font-serif text-xl font-semibold md:hidden">Ruvox</p>
       <section
         className="rise margin-rule rounded-hero bg-sheet py-7 pr-6 pl-9 shadow-card md:py-10 md:pl-16"
         style={stagger(0)}
