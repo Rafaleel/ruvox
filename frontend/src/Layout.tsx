@@ -17,7 +17,13 @@ const titles: Record<string, string> = {
 };
 
 /** Screens designed as wide compositions; every other screen is a reading column. */
-const wideRoutes = new Set(["/", "/progress", "/alphabet"]);
+const wideRoutes = new Set([
+  "/",
+  "/progress",
+  "/alphabet",
+  "/settings",
+  "/songs",
+]);
 
 /** Streak stamp at the right of the header; nothing if stats fail. */
 function StreakStamp() {
