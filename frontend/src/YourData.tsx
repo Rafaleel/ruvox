@@ -1,9 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Download, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
-import { ApiError, exportBackup, importBackup, resetData } from "./api/client";
+import { exportBackup, importBackup, resetData } from "./api/client";
 import { Button } from "./components/Button";
 import { Card } from "./components/Card";
 import { ConfirmPanel } from "./components/ConfirmPanel";
+import { friendlyError } from "./components/ErrorMessage";
+import { Notice } from "./components/Notice";
+import { Section } from "./components/Section";
 
 const COUNT_LABELS: [string, string][] = [
   ["songs", "músicas"],
@@ -94,92 +98,100 @@ export function YourData() {
   const error = exporting.error ?? importing.error ?? resetting.error;
 
   return (
-    <Card className="mt-4">
-      <h2 className="text-xl font-bold">Seus dados</h2>
-      <p className="mt-2 text-muted">
-        O backup guarda seu progresso, suas sessões e suas músicas. A chave da
-        API não entra no arquivo.
-      </p>
+    <Section
+      title="Seus dados"
+      description="O backup guarda seu progresso, suas sessões e suas músicas. A chave da API não entra no arquivo."
+    >
+      <Card className="grid gap-5">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            icon={Download}
+            loading={exporting.isPending}
+            onClick={() => {
+              startOver();
+              exporting.mutate();
+            }}
+          >
+            {exporting.isPending ? "Exportando…" : "Exportar backup"}
+          </Button>
+          <Button
+            variant="secondary"
+            icon={Upload}
+            disabled={importing.isPending}
+            onClick={() => fileInput.current?.click()}
+          >
+            Importar backup
+          </Button>
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".json,application/json"
+            aria-label="Arquivo de backup"
+            className="sr-only"
+            tabIndex={-1}
+            onChange={(e) => pickFile(e.target.files?.[0])}
+          />
+        </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button
-          variant="secondary"
-          disabled={exporting.isPending}
-          onClick={() => {
-            startOver();
-            exporting.mutate();
-          }}
-        >
-          {exporting.isPending ? "Exportando…" : "Exportar backup"}
-        </Button>
-        <Button
-          variant="secondary"
-          disabled={importing.isPending}
-          onClick={() => fileInput.current?.click()}
-        >
-          Importar backup
-        </Button>
-        <input
-          ref={fileInput}
-          type="file"
-          accept=".json,application/json"
-          aria-label="Arquivo de backup"
-          className="sr-only"
-          tabIndex={-1}
-          onChange={(e) => pickFile(e.target.files?.[0])}
-        />
-        <Button
-          variant="secondary"
-          disabled={resetting.isPending}
-          onClick={() => {
-            startOver();
-            setConfirmReset(true);
-          }}
-        >
-          Apagar meu progresso
-        </Button>
-      </div>
+        {pending !== undefined && (
+          <ConfirmPanel
+            title="Importar este backup?"
+            confirmLabel="Substituir meus dados"
+            busy={importing.isPending}
+            onConfirm={() => importing.mutate(pending)}
+            onCancel={() => setPending(undefined)}
+          >
+            <p>
+              Isto SUBSTITUI todo o seu progresso e todas as suas músicas pelos
+              do arquivo. As configurações e a chave da API não mudam.
+            </p>
+          </ConfirmPanel>
+        )}
 
-      {pending !== undefined && (
-        <ConfirmPanel
-          title="Importar este backup?"
-          confirmLabel="Substituir meus dados"
-          busy={importing.isPending}
-          onConfirm={() => importing.mutate(pending)}
-          onCancel={() => setPending(undefined)}
-        >
-          <p>
-            Isto SUBSTITUI todo o seu progresso e todas as suas músicas pelos do
-            arquivo. As configurações e a chave da API não mudam.
-          </p>
-        </ConfirmPanel>
-      )}
-      {confirmReset && (
-        <ConfirmPanel
-          title="Apagar seu progresso?"
-          confirmLabel="Apagar tudo"
-          busy={resetting.isPending}
-          onConfirm={() => resetting.mutate()}
-          onCancel={() => setConfirmReset(false)}
-        >
-          <p>
-            Isto apaga seu progresso, suas sessões e suas músicas, e não dá para
-            desfazer. As configurações e a chave da API continuam como estão.
-          </p>
-        </ConfirmPanel>
-      )}
+        <div aria-live="polite" className="grid gap-3 empty:hidden">
+          {notice && <Notice tone="success">{notice}</Notice>}
+        </div>
+        {(error || readError) && (
+          <Notice tone="danger">{readError || friendlyError(error)}</Notice>
+        )}
 
-      <div aria-live="polite" className="mt-3">
-        {notice && <p className="text-success">{notice}</p>}
-      </div>
-      {(error || readError) && (
-        <p role="alert" className="mt-3 text-danger">
-          {readError ||
-            (error instanceof ApiError
-              ? error.message
-              : "Algo deu errado. Tente de novo.")}
-        </p>
-      )}
-    </Card>
+        <div className="grid gap-3 border-t border-hairline pt-5 sm:flex sm:items-center sm:justify-between sm:gap-6">
+          <div>
+            <h3 className="text-base font-semibold">Começar do zero</h3>
+            <p className="text-sm text-ink-2">
+              Apaga progresso, sessões e músicas. As configurações e a chave da
+              API ficam.
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            icon={Trash2}
+            loading={resetting.isPending}
+            onClick={() => {
+              startOver();
+              setConfirmReset(true);
+            }}
+          >
+            Apagar meu progresso
+          </Button>
+        </div>
+        {confirmReset && (
+          <ConfirmPanel
+            title="Apagar seu progresso?"
+            confirmLabel="Apagar tudo"
+            busy={resetting.isPending}
+            onConfirm={() => resetting.mutate()}
+            onCancel={() => setConfirmReset(false)}
+          >
+            <p>
+              Isto apaga seu progresso, suas sessões e suas músicas, e não dá
+              para desfazer. As configurações e a chave da API continuam como
+              estão.
+            </p>
+          </ConfirmPanel>
+        )}
+      </Card>
+    </Section>
   );
 }

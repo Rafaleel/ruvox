@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { RefreshCw, Unplug } from "lucide-react";
+import { useEffect, useId, useState } from "react";
 import {
   ApiError,
   getLan,
@@ -11,11 +12,17 @@ import {
 import { Button } from "./components/Button";
 import { Card } from "./components/Card";
 import { ConfirmPanel } from "./components/ConfirmPanel";
-import { ErrorMessage } from "./components/ErrorMessage";
+import { ErrorMessage, friendlyError } from "./components/ErrorMessage";
+import { Notice } from "./components/Notice";
+import { Section } from "./components/Section";
+import { Switch } from "./components/Switch";
 
 const RESTART_DELAY_MS = 2000;
 const POLL_MS = 1000;
 const GIVE_UP_MS = 30000;
+
+const TITLE = "Acesso pelo celular";
+const INTRO = "Use o Ruvox no celular, na mesma rede Wi-Fi do computador.";
 
 /** After the toggle the backend exits and the shell respawns it: reload once it answers. */
 function useReloadWhenBack(active: boolean) {
@@ -53,6 +60,7 @@ function useReloadWhenBack(active: boolean) {
 
 export function PhoneAccess() {
   const queryClient = useQueryClient();
+  const switchLabel = useId();
   const [restarting, setRestarting] = useState(false);
   const lan = useQuery({
     queryKey: ["lan"],
@@ -99,12 +107,9 @@ export function PhoneAccess() {
   // Keep the card (and its restart message) if a refetch fails mid-restart.
   if (lan.isError && !lan.data)
     return (
-      <Card className="mt-4">
-        <h2 className="text-xl font-bold">Acesso pelo celular</h2>
-        <div className="mt-3">
-          <ErrorMessage error={lan.error} onRetry={() => lan.refetch()} />
-        </div>
-      </Card>
+      <Section title={TITLE} description={INTRO}>
+        <ErrorMessage error={lan.error} onRetry={() => lan.refetch()} />
+      </Section>
     );
   if (!lan.data) return null;
 
@@ -113,119 +118,140 @@ export function PhoneAccess() {
   const busy = toggle.isPending || restarting;
 
   return (
-    <Card className="mt-4">
-      <h2 className="text-xl font-bold">Acesso pelo celular</h2>
-      <label className="mt-3 flex min-h-11 items-center gap-3 font-semibold">
-        <input
-          type="checkbox"
-          role="switch"
-          className="size-6 accent-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          checked={enabled}
-          disabled={busy}
-          onChange={(e) => {
-            setNotice("");
-            if (e.target.checked) setWarning(true);
-            else toggle.mutate(false);
-          }}
-        />
-        Permitir acesso pelo celular
-      </label>
-
-      {warning && !enabled && (
-        <ConfirmPanel
-          title="Antes de ativar"
-          confirmLabel="Ativar acesso"
-          busy={toggle.isPending}
-          onConfirm={() => toggle.mutate(true)}
-          onCancel={() => setWarning(false)}
-        >
-          <p>
-            Quem for pareado poderá usar o app, inclusive a chave da API
-            configurada. Ative só em redes em que você confia.
-          </p>
-        </ConfirmPanel>
-      )}
-
-      <div aria-live="polite" className="mt-3">
-        {restarting && !timedOut && <p>O app vai reiniciar…</p>}
-        {timedOut && (
-          <p className="text-danger">
-            O app não voltou em 30 segundos. Feche e abra o Ruvox de novo.
-          </p>
-        )}
-        {!restarting && enabled && !running && (
-          <p>
-            Reinício pendente: o acesso pelo celular liga quando o app
-            reiniciar.
-          </p>
-        )}
-        {!restarting && !enabled && running && (
-          <p>
-            Reinício pendente: o acesso pelo celular desliga quando o app
-            reiniciar.
-          </p>
-        )}
-        {notice && <p className="text-success">{notice}</p>}
-      </div>
-
-      {running && (
-        <div className="mt-3 grid gap-3">
-          <div>
-            <p className="font-semibold">
-              {urls.length === 1 ? "Endereço" : "Endereços"} para abrir no
-              celular
+    <Section title={TITLE} description={INTRO}>
+      <Card className="grid gap-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p id={switchLabel} className="font-semibold">
+              Permitir acesso pelo celular
             </p>
-            <ul className="break-all">
-              {urls.map((url) => (
-                <li key={url}>{url}</li>
-              ))}
-            </ul>
+            <p className="text-sm text-ink-3">
+              {enabled ? "Ligado" : "Desligado"}. Só quem digitar o código
+              consegue entrar.
+            </p>
           </div>
-          <div>
-            <p className="font-semibold">Código de pareamento</p>
-            {code && (
-              <p className="text-5xl font-extrabold tracking-[0.2em]">
-                <span aria-hidden="true">{code}</span>
-                <span className="sr-only">{code.split("").join(" ")}</span>
-              </p>
+          <Switch
+            aria-labelledby={switchLabel}
+            checked={enabled}
+            disabled={busy}
+            onCheckedChange={(on) => {
+              setNotice("");
+              if (on) setWarning(true);
+              else toggle.mutate(false);
+            }}
+          />
+        </div>
+
+        {warning && !enabled && (
+          <ConfirmPanel
+            title="Antes de ativar"
+            confirmLabel="Ativar acesso"
+            busy={toggle.isPending}
+            onConfirm={() => toggle.mutate(true)}
+            onCancel={() => setWarning(false)}
+          >
+            <p>
+              Quem for pareado poderá usar o app, inclusive a chave da API
+              configurada. Ative só em redes em que você confia.
+            </p>
+          </ConfirmPanel>
+        )}
+
+        <div aria-live="polite" className="grid gap-3 empty:hidden">
+          {restarting && !timedOut && <Notice>O app vai reiniciar…</Notice>}
+          {timedOut && (
+            <Notice tone="danger">
+              O app não voltou em 30 segundos. Feche e abra o Ruvox de novo.
+            </Notice>
+          )}
+          {!restarting && enabled && !running && (
+            <Notice>
+              Reinício pendente: o acesso pelo celular liga quando o app
+              reiniciar.
+            </Notice>
+          )}
+          {!restarting && !enabled && running && (
+            <Notice>
+              Reinício pendente: o acesso pelo celular desliga quando o app
+              reiniciar.
+            </Notice>
+          )}
+          {notice && <Notice tone="success">{notice}</Notice>}
+        </div>
+
+        {running && (
+          <div className="grid gap-5 border-t border-hairline pt-5">
+            <Notice tone="warning">
+              Enquanto estiver ligado, quem estiver pareado pode usar o app e a
+              sua chave. Use só em redes em que você confia.
+            </Notice>
+            <div className="grid gap-5 md:grid-cols-2">
+              <div>
+                <p className="text-sm font-semibold text-ink-2">
+                  {urls.length === 1 ? "Endereço" : "Endereços"} para abrir no
+                  celular
+                </p>
+                <ul className="mt-2 grid gap-2">
+                  {urls.map((url) => (
+                    <li
+                      key={url}
+                      className="rounded-control bg-sheet-2 px-3.5 py-3 font-medium break-all shadow-[inset_0_0_0_1px_var(--hairline)]"
+                    >
+                      {url}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-ink-2">
+                  Código de pareamento
+                </p>
+                {code && (
+                  <p className="mt-2 rounded-card bg-gold-soft px-4 py-3 text-center font-serif text-5xl font-semibold tracking-[0.18em] text-gold-ink outline-2 -outline-offset-6 outline-gold/50 outline-dashed">
+                    <span aria-hidden="true">{code}</span>
+                    <span className="sr-only">{code.split("").join(" ")}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                icon={RefreshCw}
+                loading={renew.isPending}
+                onClick={() => renew.mutate()}
+              >
+                Renovar código
+              </Button>
+              <Button
+                variant="secondary"
+                icon={Unplug}
+                onClick={() => setConfirmUnpair(true)}
+              >
+                Desparear todos os celulares
+              </Button>
+            </div>
+            {confirmUnpair && (
+              <ConfirmPanel
+                title="Desparear todos os celulares?"
+                confirmLabel="Desparear todos"
+                busy={unpair.isPending}
+                onConfirm={() => unpair.mutate()}
+                onCancel={() => setConfirmUnpair(false)}
+              >
+                <p>
+                  Todos os celulares pareados perdem o acesso e precisam digitar
+                  um novo código.
+                </p>
+              </ConfirmPanel>
             )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="secondary"
-              disabled={renew.isPending}
-              onClick={() => renew.mutate()}
-            >
-              Renovar código
-            </Button>
-            <Button variant="secondary" onClick={() => setConfirmUnpair(true)}>
-              Desparear todos os celulares
-            </Button>
-          </div>
-          {confirmUnpair && (
-            <ConfirmPanel
-              title="Desparear todos os celulares?"
-              confirmLabel="Desparear todos"
-              busy={unpair.isPending}
-              onConfirm={() => unpair.mutate()}
-              onCancel={() => setConfirmUnpair(false)}
-            >
-              <p>
-                Todos os celulares pareados perdem o acesso e precisam digitar
-                um novo código.
-              </p>
-            </ConfirmPanel>
-          )}
-        </div>
-      )}
+        )}
 
-      {mutationError && (
-        <p role="alert" className="mt-3 text-danger">
-          {mutationError instanceof ApiError
-            ? mutationError.message
-            : "Algo deu errado. Tente de novo."}
-        </p>
-      )}
-    </Card>
+        {mutationError && (
+          <Notice tone="danger">{friendlyError(mutationError)}</Notice>
+        )}
+      </Card>
+    </Section>
   );
 }
