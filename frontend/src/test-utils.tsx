@@ -57,3 +57,18 @@ export const stats = {
   best_streak: 5,
   today_done: true,
 };
+
+/** The alphabet map: 5 + 8 + 20 letters; 19 new, 7 learning, 5 familiar, 2 mastered. */
+export const letterMap = Array.from({ length: 33 }, (_, i) => ({
+  id: i + 1,
+  text: i === 32 ? "Ё" : String.fromCharCode(0x410 + i),
+  pronunciation: `som ${i + 1}`,
+  group: i < 5 ? 1 : i < 13 ? 2 : 3,
+  status: (i < 2
+    ? "mastered"
+    : i < 7
+      ? "familiar"
+      : i < 14
+        ? "learning"
+        : "new") as "new" | "learning" | "familiar" | "mastered",
+}));

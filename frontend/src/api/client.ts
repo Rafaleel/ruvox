@@ -25,6 +25,7 @@ export type SongAnalysis = Schemas["SongAnalysisOut"];
 export type ConfirmEntry = Schemas["ConfirmEntry"];
 export type ConfirmResult = Schemas["ConfirmOut"];
 export type Stats = Schemas["StatsOut"];
+export type LetterStatus = Schemas["LetterStatus"];
 
 /** Mirrors the backend limit; the API answers 413 above it. */
 export const MAX_LYRICS_CHARS = 20000;
@@ -78,6 +79,10 @@ export const health = (signal?: AbortSignal) =>
 
 export const getProgress = (signal?: AbortSignal) =>
   request<Progress>("/api/progress", { signal });
+
+/** Every alphabet letter with its mastery status: the data behind the alphabet map. */
+export const getLetterMap = (signal?: AbortSignal) =>
+  request<LetterStatus[]>("/api/progress/letters", { signal });
 
 export const getItems = (kind: string, signal?: AbortSignal) =>
   request<Item[]>(`/api/items?kind=${encodeURIComponent(kind)}`, { signal });
