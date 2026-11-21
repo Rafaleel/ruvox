@@ -47,7 +47,7 @@ function heroOf(prompt: string): string | null {
 /** Hero scale: letters 6 to 9rem, short words 3.5 to 5.5rem, long quotes smaller. */
 const heroClass = (text: string) => {
   const length = [...text].length;
-  if (length <= 3) return "text-[clamp(6rem,14cqw,9rem)]";
+  if (length <= 3) return "text-[clamp(6rem,16cqw,9rem)]";
   if (length <= 8) return "text-[clamp(3.5rem,9cqw,5.5rem)]";
   return "text-[clamp(2.25rem,5.5cqw,3.5rem)]";
 };
@@ -194,7 +194,7 @@ export function Quiz({
   const hero = question.input_kind === "flip" ? null : heroOf(question.prompt);
   const done = index + (feedback ? 1 : 0);
   return (
-    <div className="mx-auto w-full max-w-[48rem]">
+    <div className="mx-auto w-full max-w-[52rem] pt-[min(4vh,3rem)]">
       <header className="flex items-center gap-3 @[34rem]:gap-4">
         <Button
           id="session-exit"
@@ -264,7 +264,7 @@ export function Quiz({
           key={`prompt-${index}`}
           margin
           className={cx(
-            "rise relative mt-5 overflow-hidden rounded-hero py-7 pr-6 pl-12 @[34rem]:pl-16",
+            "rise relative mt-5 overflow-hidden rounded-hero py-7 pr-6 pl-12 text-center @[34rem]:pl-16",
             hero ? "@[34rem]:py-10" : "@[34rem]:py-9",
           )}
         >
@@ -364,7 +364,13 @@ export function Quiz({
       {question.input_kind === "choice" && (
         <ul
           key={`options-${index}`}
-          className="mt-4 grid gap-3 @[34rem]:grid-cols-2"
+          className={cx(
+            "mt-4 grid gap-3",
+            // Short options sit two by two even on a narrow window.
+            question.options.every((o) => o.length <= 12)
+              ? "grid-cols-2"
+              : "@[34rem]:grid-cols-2",
+          )}
         >
           {question.options.map((option, i) => {
             const right =
@@ -439,11 +445,7 @@ export function Quiz({
       )}
       <div
         aria-live="polite"
-        className={
-          result
-            ? "sticky bottom-[calc(1rem+env(safe-area-inset-bottom))] z-10 mt-5"
-            : undefined
-        }
+        className={result ? "mt-5 scroll-mb-4" : undefined}
       >
         {result && (
           <div

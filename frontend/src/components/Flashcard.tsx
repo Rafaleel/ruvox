@@ -90,7 +90,7 @@ export function Flashcard({
               >
                 {question.prompt}
               </p>
-              <p className="mt-6 font-serif text-[clamp(1.75rem,5cqw,2.75rem)] leading-tight font-semibold text-balance text-ink">
+              <p className="mt-6 font-serif text-[clamp(2.25rem,7cqw,3.5rem)] leading-tight font-semibold text-balance text-ink">
                 {question.reveal}
               </p>
             </Face>

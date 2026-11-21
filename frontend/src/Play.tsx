@@ -95,10 +95,10 @@ function ModeCard({
   return (
     <label
       className={cx(
-        "group relative flex cursor-pointer items-start gap-4 rounded-card bg-sheet p-4 shadow-card @[34rem]:p-5",
+        "group relative flex cursor-pointer rounded-card bg-sheet p-4 shadow-card @[34rem]:p-5",
         "transition-[transform,box-shadow,background-color] duration-150 ease-out-soft hover:-translate-y-0.5 hover:shadow-[0_0_0_1.5px_var(--rule)] active:scale-[.98]",
         "has-checked:bg-accent-soft has-checked:shadow-[0_0_0_2px_var(--accent)] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent",
-        featured && "@[34rem]:col-span-2",
+        featured ? "items-start gap-4 @[34rem]:col-span-2" : "flex-col gap-3",
       )}
     >
       <input
@@ -116,7 +116,7 @@ function ModeCard({
       >
         <Icon icon={icon} size={26} />
       </span>
-      <span className="min-w-0 flex-1 pr-8">
+      <span className={cx("min-w-0 flex-1", featured && "pr-8")}>
         <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
           <span id={`${id}-title`} className="font-serif text-xl font-semibold">
             {label}
@@ -282,7 +282,7 @@ export function Play() {
                   {chosen.label}
                 </p>
                 <p className="text-sm text-ink-2 @[52rem]:mt-1 @[52rem]:text-base">
-                  {size} perguntas · cerca de {minutes} min
+                  {size} perguntas · {minutes} min
                 </p>
               </div>
             </div>
