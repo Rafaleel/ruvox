@@ -4,6 +4,7 @@ import {
   Check,
   CircleCheck,
   CircleX,
+  BookOpen,
   Loader2,
   X,
 } from "lucide-react";
@@ -14,6 +15,7 @@ import {
   type AnswerResult,
   type Session,
 } from "./api/client";
+import { AlphabetReference } from "./components/AlphabetReference";
 import { Badge } from "./components/Badge";
 import { Button } from "./components/Button";
 import { Card } from "./components/Card";
@@ -26,6 +28,7 @@ import { Flashcard } from "./components/Flashcard";
 import { Icon } from "./components/Icon";
 import { stagger } from "./components/motion";
 import { PairsGame } from "./components/PairsGame";
+import { playFeedback } from "./components/sound";
 import { SourceBadge } from "./components/SourceBadge";
 import { Result } from "./Result";
 
@@ -82,6 +85,7 @@ export function Quiz({
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [typed, setTyped] = useState("");
   const [leaving, setLeaving] = useState(false);
+  const [reference, setReference] = useState(false);
   const shownAt = useRef(performance.now());
   const question = queue[index];
 
@@ -94,6 +98,7 @@ export function Quiz({
       }),
     onSuccess: (result, v) => {
       setFeedback({ chosen: v.option, result });
+      playFeedback(result.correct);
       if (result.correct) setScore((s) => s + 1);
       const requeued = result.requeued_question;
       if (requeued) setQueue((q) => [...q, requeued]);
@@ -144,6 +149,7 @@ export function Quiz({
         e.altKey ||
         e.repeat ||
         leaving ||
+        reference ||
         !finish.isIdle
       )
         return;
@@ -228,6 +234,15 @@ export function Quiz({
             />
           </div>
         </div>
+        <Button
+          variant="ghost"
+          icon={BookOpen}
+          className="shrink-0 px-2.5"
+          aria-expanded={reference}
+          onClick={() => setReference((r) => !r)}
+        >
+          Alfabeto<span className="sr-only"> de consulta</span>
+        </Button>
         <Badge
           tone="gold"
           icon={Check}
@@ -236,6 +251,8 @@ export function Quiz({
           Acertos: {score}
         </Badge>
       </header>
+
+      {reference && <AlphabetReference onClose={() => setReference(false)} />}
 
       {leaving && (
         <ConfirmPanel

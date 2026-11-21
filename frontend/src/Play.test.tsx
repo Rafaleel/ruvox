@@ -245,3 +245,88 @@ it("leaves a session at once before any answer and asks after one", async () => 
   fireEvent.click(screen.getByRole("button", { name: "Sair" }));
   expect(screen.getByRole("button", { name: "Começar" })).toBeTruthy();
 });
+
+it("plays a sound for a right and for a wrong answer", async () => {
+  const oscillators: number[] = [];
+  const node = () => ({ connect: (n: unknown) => n, start() {}, stop() {} });
+  class FakeAudio {
+    state = "running";
+    currentTime = 0;
+    destination = {};
+    createOscillator = () => {
+      const o = { ...node(), frequency: { value: 0 }, type: "" };
+      oscillators.push(0);
+      return o;
+    };
+    createGain = () => ({
+      ...node(),
+      gain: {
+        setValueAtTime() {},
+        exponentialRampToValueAtTime() {},
+      },
+    });
+  }
+  vi.stubGlobal("AudioContext", FakeAudio);
+  routes["POST /api/sessions"] = () =>
+    Response.json({
+      session_id: 7,
+      source: "offline",
+      questions: [question(1, "Como se lê Ч?"), question(2, "Como se lê Ш?")],
+    });
+  const answers = [answerOut(true), answerOut(false)];
+  routes["POST /api/sessions/7/answers"] = () =>
+    Response.json(answers.shift()!);
+
+  renderPlay();
+  fireEvent.click(screen.getByRole("button", { name: "Começar" }));
+  await screen.findByText("Como se lê Ч?");
+  expect(oscillators).toHaveLength(0);
+  fireEvent.click(screen.getByRole("button", { name: /tch/ }));
+  await screen.findByText("Correto!");
+  expect(oscillators).toHaveLength(2);
+  fireEvent.click(screen.getByRole("button", { name: "Próxima" }));
+  await screen.findByText("Pergunta 2 de 2");
+  fireEvent.keyDown(window, { key: "2" });
+  await screen.findByText("Errou.");
+  expect(oscillators).toHaveLength(4);
+});
+
+it("opens the alphabet for consultation during a session", async () => {
+  routes["POST /api/sessions"] = () =>
+    Response.json({
+      session_id: 7,
+      source: "offline",
+      questions: [question(1, "Como se lê Ч?")],
+    });
+  routes["GET /api/items?kind=letter"] = () =>
+    Response.json([
+      {
+        id: 1,
+        kind: "letter",
+        text: "Ч",
+        pronunciation: "tch",
+        meaning: "",
+        source: "seed",
+        group: 3,
+        difficulty: 1,
+      },
+    ]);
+
+  renderPlay();
+  fireEvent.click(screen.getByRole("button", { name: "Começar" }));
+  await screen.findByText("Como se lê Ч?");
+  fireEvent.click(screen.getByRole("button", { name: /Alfabeto/ }));
+  const panel = await screen.findByRole("dialog", {
+    name: "Consulta do alfabeto",
+  });
+  expect(await within(panel).findByText("tch")).toBeTruthy();
+  // Digits do not answer the question behind the open panel.
+  fireEvent.keyDown(window, { key: "1" });
+  expect(fetchMock.mock.calls.some(([u]) => u.endsWith("/answers"))).toBe(
+    false,
+  );
+  fireEvent.keyDown(panel, { key: "Escape" });
+  expect(
+    screen.queryByRole("dialog", { name: "Consulta do alfabeto" }),
+  ).toBeNull();
+});
