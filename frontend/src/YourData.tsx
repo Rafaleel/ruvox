@@ -103,7 +103,7 @@ export function YourData() {
       description="O backup guarda seu progresso, suas sessões e suas músicas. A chave da API não entra no arquivo."
     >
       <Card className="grid gap-5">
-        <div className="flex flex-wrap gap-2">
+        <div className="grid gap-2 sm:flex sm:flex-wrap">
           <Button
             variant="secondary"
             icon={Download}
@@ -167,6 +167,7 @@ export function YourData() {
           <Button
             variant="secondary"
             icon={Trash2}
+            className="sm:shrink-0"
             loading={resetting.isPending}
             onClick={() => {
               startOver();

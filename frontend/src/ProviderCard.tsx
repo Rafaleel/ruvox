@@ -188,7 +188,7 @@ export function ProviderCard({
                 aqui, mas você pode escolher o modelo.
               </p>
             )}
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
               <Button
                 type="submit"
                 disabled={key_from_env || !keyDraft.trim() || save.isPending}
@@ -250,7 +250,7 @@ export function ProviderCard({
                 ))}
               </Select>
             )}
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
               <Button
                 variant="secondary"
                 icon={ListRestart}
@@ -283,7 +283,7 @@ export function ProviderCard({
         {error && <Notice tone="danger">{friendlyError(error)}</Notice>}
 
         <footer className="grid gap-3 border-t border-hairline pt-4">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-x-4">
             {!active && (
               <Button
                 variant={needs ? "secondary" : "primary"}

@@ -214,7 +214,7 @@ export function PhoneAccess() {
                 )}
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
               <Button
                 variant="secondary"
                 icon={RefreshCw}
