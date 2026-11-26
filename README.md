@@ -170,6 +170,7 @@ Seed words (50 everyday words and cognates like `банан`, `метро`, `к�
 | 5 | **Flashcards** | Reveal pronunciation & meaning (*"Sabia / Errei"*) | Flip card | Yes |
 | 6 | **Timed Pairs** | Match 6 Cyrillic-to-Portuguese pairs in 60 s | Pair matching | Yes |
 | 7 | **Cloze** | Fill the blank in a short excerpt (≤ 8 words) | Choice or text | Yes |
+| 8 | **Alphabet** | Letters only: read the letter or pick the letter for a sound | Multiple choice | Yes |
 
 ---
 
@@ -318,7 +319,7 @@ The full 5-phase MVP roadmap (`P0-1` through `P4-6`) plus multi-provider AI supp
 - [ ] **Real-device LAN & desktop verification:** Verify phone pairing over a real home Wi-Fi network and the automatic LAN-mode sidecar restart inside a packaged Tauri desktop window.
 - [ ] **First tagged release (`v0.1.0`) & branch protection:** Decide on repository branch protection and push tag `v0.1.0` to validate the automated `.deb` / AppImage GitHub Release workflow.
 - [ ] **Cross-platform builds (future):** Best-effort packaging and testing for Windows and macOS (currently Linux x86_64 first).
-- [ ] **Optional future improvements:** Add OpenAI/Groq pricing entries to `PRICES_PER_MTOK` for automatic cost tracking, optional AI-generated cloze sentences beyond stored song excerpts, and richer study feedback (e.g. intro lessons & answer audio).
+- [ ] **Optional future improvements:** Add OpenAI/Groq pricing entries to `PRICES_PER_MTOK` for automatic cost tracking, optional AI-generated cloze sentences beyond stored song excerpts.
 
 ---
 
