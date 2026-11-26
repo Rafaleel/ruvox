@@ -26,15 +26,27 @@ class QuestionOut(BaseModel):
 
 
 class SessionCreate(BaseModel):
-    mode: Literal["mixed", 1, 2, 3, 4, 5, 6, 7] = "mixed"
+    mode: Literal["mixed", 1, 2, 3, 4, 5, 6, 7, 8] = "mixed"
     song_id: int | None = None  # practice only the vocabulary of this song
     size: int = Field(default=10, ge=5, le=20)
+
+
+class LessonOut(BaseModel):
+    """Intro card for an item the learner has never practiced."""
+
+    item_id: int
+    kind: str
+    text: str
+    pronunciation: str
+    meaning: str
+    note: str
 
 
 class SessionOut(BaseModel):
     session_id: int
     source: Literal["offline", "ai"]
     questions: list[QuestionOut]
+    lessons: list[LessonOut] = []
 
 
 class AnswerIn(BaseModel):

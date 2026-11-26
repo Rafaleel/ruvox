@@ -99,7 +99,7 @@ def test_rejections(client: TestClient) -> None:
 
 
 def test_validation_and_empty_modes(client: TestClient) -> None:
-    assert client.post("/api/sessions", json={"mode": 8}).status_code == 422
+    assert client.post("/api/sessions", json={"mode": 9}).status_code == 422
     assert client.post("/api/sessions", json={"size": 2}).status_code == 422
     assert client.post("/api/sessions", json={"mode": 3}).status_code == 409
 
@@ -131,3 +131,19 @@ def test_alphabet_map_reports_each_letter_status(client: TestClient) -> None:
     }
     assert after[first["item_ids"][0]] == "learning"
     assert list(after.values()).count("new") == 32
+
+
+def test_new_items_get_intro_lessons_until_they_are_practiced(
+    client: TestClient,
+) -> None:
+    first = client.post("/api/sessions", json={"mode": 8, "size": 5}).json()
+    assert first["lessons"] and all(x["kind"] == "letter" for x in first["lessons"])
+    assert all(x["note"] for x in first["lessons"])
+    question = first["questions"][0]
+    client.post(
+        f"/api/sessions/{first['session_id']}/answers",
+        json={"question_id": question["id"], "answer": question["options"][0]},
+    )
+    again = client.post("/api/sessions", json={"mode": 8, "size": 5}).json()
+    taught = {x["item_id"] for x in again["lessons"]}
+    assert not taught & set(question["item_ids"])

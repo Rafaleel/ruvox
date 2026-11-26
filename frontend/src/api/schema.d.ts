@@ -614,6 +614,24 @@ export interface components {
             /** Paired */
             paired: boolean;
         };
+        /**
+         * LessonOut
+         * @description Intro card for an item the learner has never practiced.
+         */
+        LessonOut: {
+            /** Item Id */
+            item_id: number;
+            /** Kind */
+            kind: string;
+            /** Text */
+            text: string;
+            /** Pronunciation */
+            pronunciation: string;
+            /** Meaning */
+            meaning: string;
+            /** Note */
+            note: string;
+        };
         /** LetterStatus */
         LetterStatus: {
             /** Id */
@@ -749,7 +767,7 @@ export interface components {
              * @default mixed
              * @enum {unknown}
              */
-            mode: "mixed" | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+            mode: "mixed" | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
             /** Song Id */
             song_id?: number | null;
             /**
@@ -769,6 +787,11 @@ export interface components {
             source: "offline" | "ai";
             /** Questions */
             questions: components["schemas"]["QuestionOut"][];
+            /**
+             * Lessons
+             * @default []
+             */
+            lessons: components["schemas"]["LessonOut"][];
         };
         /** SettingsIn */
         SettingsIn: {

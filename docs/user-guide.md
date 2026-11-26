@@ -32,6 +32,11 @@ e as palavras liberam quando você já viu todas as letras que elas usam.
 | Cartões | Vire o cartão e diga se sabia ou errou |
 | Pares | Ligue palavras e significados em 60 segundos |
 | Lacuna | Complete um trecho de uma das suas músicas |
+| Alfabeto | Só letras: leia cada uma e ache o som certo |
+
+Antes de uma sessão, letras e palavras nunca praticadas aparecem em uma lição curta (dá para pular).
+Durante o jogo, o botão **Alfabeto** abre a tabela de letras para consulta, e cada resposta toca um som
+de acerto ou erro. As palavras das suas músicas só aparecem no treino da música e no modo Lacuna.
 
 ## Usar a IA (opcional)
 

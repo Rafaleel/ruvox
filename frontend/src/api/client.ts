@@ -7,6 +7,7 @@ export type Item = Schemas["ItemOut"];
 export type Progress = Schemas["ProgressOut"];
 export type Question = Schemas["QuestionOut"];
 export type Session = Schemas["SessionOut"];
+export type Lesson = Schemas["LessonOut"];
 export type SessionCreate = Schemas["SessionCreate"];
 export type AnswerResult = Schemas["AnswerOut"];
 export type FinishResult = Schemas["FinishOut"];

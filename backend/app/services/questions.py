@@ -33,6 +33,13 @@ TYPE_BY_MODE: dict[int, QuestionType] = {
 }
 
 
+LETTER_TIPS = {
+    1: "Esta letra é igual ao português, é só lembrar o som.",
+    2: "Cuidado: ela parece uma letra latina, mas o som é outro.",
+    3: "Letra nova: grave a forma junto com o som.",
+}
+
+
 class QuestionDraft(BaseModel):
     """A question with its answer; the API turns it into a client-safe QuestionOut."""
 
@@ -69,6 +76,9 @@ class SeedQuestionGenerator:
             return self._pairs(plan)
         if mode == 7:
             return self._cloze(plan, size)
+        if mode == 8:  # alphabet game: letter-to-sound and sound-to-letter only
+            plan = [entry for entry in plan if entry.item.kind == "letter"]
+            mode = None
         modes_for = {"letter": (1, 2), "word": (3,), "expression": (3,)}
         questions: list[QuestionDraft] = []
         seen: set[str] = set()
@@ -100,17 +110,20 @@ class SeedQuestionGenerator:
         if mode == 1:
             prompt = f"Como se lê «{item.text}»?"
             answer, field = item.pronunciation, "pronunciation"
-            explanation = f"{item.text} lê-se {item.pronunciation}."
+            explanation = self._letter_note(item)
         elif mode == 2:
             prompt = f"Qual letra faz «{item.pronunciation}»?"
             answer, field = item.text, "text"
-            explanation = f"{item.text} lê-se {item.pronunciation}."
+            explanation = self._letter_note(item)
         else:
-            prompt = f"O que significa «{item.text}»?"
+            # The reading is part of the prompt: a beginner can sound the word out
+            # even when it looks nothing like the Portuguese one.
+            prompt = f"O que significa «{item.text}» ({item.pronunciation})?"
             answer, field = item.meaning, "meaning"
             explanation = (
-                f"{item.text} ({item.pronunciation}) significa «{item.meaning}»."
-            )
+                f"{item.text} ({item.pronunciation}) significa «{item.meaning}». "
+                f"{self._spelling(item)}"
+            ).strip()
         options = [answer, *self._distractors(item, field, answer)]
         self.rng.shuffle(options)
         return QuestionDraft(
@@ -121,6 +134,25 @@ class SeedQuestionGenerator:
             explanation=explanation,
             item_ids=[item.id],
         )
+
+    def lesson_note(self, item: Item) -> str:
+        """The teaching text of an intro card: group tip for letters, spelling for words."""
+        if item.kind == "letter":
+            return LETTER_TIPS.get(item.group or 0, "")
+        return self._spelling(item)
+
+    def _letter_note(self, item: Item) -> str:
+        note = f"{item.text} lê-se {item.pronunciation}."
+        tip = LETTER_TIPS.get(item.group or 0)
+        return f"{note} {tip}" if item.kind == "letter" and tip else note
+
+    def _spelling(self, item: Item) -> str:
+        """Letter-by-letter reading of a word, so the sound can be traced back."""
+        sounds = {
+            i.text.lower(): i.pronunciation for i in self.pool if i.kind == "letter"
+        }
+        parts = [f"{c} = {sounds[c]}" for c in item.text.lower() if c in sounds]
+        return f"Letra por letra: {'; '.join(parts)}." if parts else ""
 
     def _flashcard(self, item: Item) -> QuestionDraft:
         assert item.id is not None
